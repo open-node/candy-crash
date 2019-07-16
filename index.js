@@ -14,3 +14,4 @@ const resources = [
 const game = new Game(canvas, Image, width, height, [320, 414], [640, 812]);
 game.env = "production";
 game.init(resources);
+window.game = game;

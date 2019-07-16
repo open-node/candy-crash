@@ -15,8 +15,9 @@ const resources = [
 const game = new Game(canvas, Image, width, height, [320, 414], [640, 812]);
 game.env = "production";
 game.init(resources);
+window.game = game;
 
-},{"./src/game":6}],2:[function(require,module,exports){
+},{"./src/game":7}],2:[function(require,module,exports){
 
 },{}],3:[function(require,module,exports){
 // shim for using process in browser
@@ -216,41 +217,134 @@ class Bg extends Actor {
 
 module.exports = Bg;
 
-},{"open-game":9}],5:[function(require,module,exports){
+},{"open-game":10}],5:[function(require,module,exports){
 const { Actor } = require("open-game");
 
-const BLOCKNUM = 5; // block 种类数量
-const ROWS = 10; // block 行数量
-const COLS = 10; // block 列数量
-const TOP = 200; // 顶部最少偏移量
-const BOTTOM = 50; // 底部最少偏移量, 多余的高度优先留个顶部
-const BLOCKSIZE = 34; // block 的size，宽等于高
-const GAP = 2; // block 之间的缝隙宽度
-const PRIM = 9973; // 辅助随机功能
+class Block extends Actor {
+  constructor(game, code, r, c, ox, oy) {
+    super(game, game.imgMaps[`block${code}`]);
+    this.code = code;
+    this.r = r;
+    this.c = c;
+    this.ox = ox;
+    this.oy = oy;
+    this.gap = this.game.opts.gap;
+    this.prim = this.game.opts.prim;
 
-class Map extends Actor {
-  reset() {
-    this.x = (this.game.w - BLOCKSIZE * COLS - (COLS - 1) * GAP) >> 1;
-    this.y = this.game.h - BLOCKSIZE * ROWS - (ROWS - 1) * GAP - BOTTOM;
-    if (this.y < TOP) throw Error("画布太小无法展示");
+    // 是否被点击选中
+    this.actived = false;
+    this.alpha = 1; // 选中后的效果
+    this.da = 0.03; // 透明度变化量
 
-    // 记录当前地图中block的情况
-    this.code = [];
-    for (let i = 0; i < ROWS; i += 1) {
-      this.code[i] = [];
-      for (let j = 0; j < COLS; j += 1) {
-        this.code[i][j] = 1 + (((Math.random() * PRIM) | 0) % BLOCKNUM);
-      }
+    [this.x, this.y] = this.calc(r, c);
+    this.frames = 0; // 运动剩余帧数
+    this.tr = 0; // 运动目标行号
+    this.tc = 0; // 运动目标列号
+    this.tx = 0; // 运动目标x坐标
+    this.ty = 0; // 运动目标y坐标
+  }
+
+  calc(r, c) {
+    return [
+      this.ox + r * (this.w + this.gap),
+      this.oy + c * (this.w + this.gap)
+    ];
+  }
+
+  update() {
+    // 处理运动及位移
+    if (0 < this.frames) {
+      this.x += (this.tx - this.x) / this.frames;
+      this.y += (this.ty - this.y) / this.frames;
+      this.frames -= 1;
     }
-    console.log(this.code);
+
+    // 点击选中效果
+    if (this.actived) {
+      if (this.alpha <= 0 || 1 <= this.alpha) this.da = 0 - this.da;
+      this.alpha += this.da;
+    }
+  }
+
+  click(x, y) {
+    this.actived = this.isItOn(x, y);
+  }
+
+  moveTo(frames, r, c) {
+    if (this.game.opts.rows <= r) throw Error("越界了");
+    if (this.game.opts.cols <= c) throw Error("越界了");
+    [this.tx, this.ty] = this.calc(r, c);
+    this.frames = frames;
+    this.tr = r;
+    this.tc = c;
   }
 
   render() {
-    for (let i = 0; i < ROWS; i += 1) {
-      for (let j = 0; j < COLS; j += 1) {
-        const x = this.x + i * (BLOCKSIZE + GAP);
-        const y = this.y + j * (BLOCKSIZE + GAP);
-        this.game.drawImageByName(`block${this.code[i][j]}`, x, y);
+    if (this.actived) {
+      // 绘制选中效果
+      this.game.ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+      this.game.ctx.fillRect(this.x - 4, this.y - 4, this.w + 8, this.h + 8);
+    }
+    this.game.drawImageByName(`block${this.code}`, this.x, this.y);
+  }
+}
+
+module.exports = Block;
+
+},{"open-game":10}],6:[function(require,module,exports){
+const { Actor } = require("open-game");
+const Block = require("./block");
+
+class Map extends Actor {
+  reset() {
+    const {
+      blocksize,
+      blocknum,
+      cols,
+      rows,
+      prim,
+      gap,
+      top,
+      bottom
+    } = this.game.opts;
+    this.x = (this.game.w - blocksize * cols - (cols - 1) * gap) >> 1;
+    this.y = this.game.h - blocksize * rows - (rows - 1) * gap - bottom;
+    if (this.y < top) throw Error("画布太小无法展示");
+
+    // 记录当前地图中block的情况
+    this.code = [];
+    this.blocks = [];
+    for (let i = 0; i < rows; i += 1) {
+      this.code[i] = [];
+      this.blocks[i] = [];
+      for (let j = 0; j < cols; j += 1) {
+        // 编号从1开始
+        this.code[i][j] = 1 + (((Math.random() * prim) | 0) % blocknum);
+        this.blocks[i][j] = new Block(
+          this.game,
+          this.code[i][j],
+          i,
+          j,
+          this.x,
+          this.y
+        );
+      }
+    }
+  }
+
+  click(x, y) {
+    for (let i = 0; i < this.game.opts.rows; i += 1) {
+      for (let j = 0; j < this.game.opts.cols; j += 1) {
+        this.blocks[i][j].click(x, y);
+      }
+    }
+  }
+
+  render() {
+    for (let i = 0; i < this.game.opts.rows; i += 1) {
+      for (let j = 0; j < this.game.opts.cols; j += 1) {
+        this.blocks[i][j].update();
+        this.blocks[i][j].render();
       }
     }
   }
@@ -258,7 +352,7 @@ class Map extends Actor {
 
 module.exports = Map;
 
-},{"open-game":9}],6:[function(require,module,exports){
+},{"./block":5,"open-game":10}],7:[function(require,module,exports){
 const OpenGame = require("open-game");
 const Start = require("./scenes/start");
 const Map = require("./actors/map");
@@ -271,6 +365,16 @@ class Game extends OpenGame {
       record: [],
       curr: 0,
       best: 0
+    };
+    this.opts = {
+      blocknum: 5, // block 种类数量
+      rows: 8, // block 行数量
+      cols: 8, // block 列数量
+      top: 200, // 顶部最少偏移量
+      bottom: 50, // 底部最少偏移量, 多余的高度优先留个顶部
+      blocksize: 34, // block 的size，宽等于高
+      gap: 10, // block 之间的缝隙宽度
+      prim: 9973 // 辅助随机功能
     };
   }
 
@@ -292,7 +396,7 @@ class Game extends OpenGame {
 
 module.exports = Game;
 
-},{"./actors/bg":4,"./actors/map":5,"./scenes/start":7,"open-game":9}],7:[function(require,module,exports){
+},{"./actors/bg":4,"./actors/map":6,"./scenes/start":8,"open-game":10}],8:[function(require,module,exports){
 const { Scene } = require("open-game");
 
 class Start extends Scene {
@@ -305,7 +409,7 @@ class Start extends Scene {
 
 module.exports = Start;
 
-},{"open-game":9}],8:[function(require,module,exports){
+},{"open-game":10}],9:[function(require,module,exports){
 /**
  * Actor 类
  * @class
@@ -407,7 +511,7 @@ class Actor {
 
 module.exports = Actor;
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 (function (process){
 const Actor = require("./actor");
 const Scene = require("./scene");
@@ -762,7 +866,7 @@ Game.Scene = Scene;
 module.exports = Game;
 
 }).call(this,require('_process'))
-},{"./actor":8,"./scene":10,"_process":3,"fs":2}],10:[function(require,module,exports){
+},{"./actor":9,"./scene":11,"_process":3,"fs":2}],11:[function(require,module,exports){
 /**
  * Scene 类
  * @class

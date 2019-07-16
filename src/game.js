@@ -11,6 +11,16 @@ class Game extends OpenGame {
       curr: 0,
       best: 0
     };
+    this.opts = {
+      blocknum: 5, // block 种类数量
+      rows: 8, // block 行数量
+      cols: 8, // block 列数量
+      top: 200, // 顶部最少偏移量
+      bottom: 50, // 底部最少偏移量, 多余的高度优先留个顶部
+      blocksize: 34, // block 的size，宽等于高
+      gap: 10, // block 之间的缝隙宽度
+      prim: 9973 // 辅助随机功能
+    };
   }
 
   // 创建角色, 并非游戏全部角色
