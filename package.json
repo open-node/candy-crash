@@ -19,6 +19,7 @@
   "author": "Redstone Zhao",
   "license": "MIT",
   "devDependencies": {
+    "canvas": "^2.5.0",
     "watchify": "^3.11.1"
   },
   "dependencies": {

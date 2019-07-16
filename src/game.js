@@ -1,5 +1,7 @@
 const OpenGame = require("open-game");
 const Start = require("./scenes/start");
+const Map = require("./actors/map");
+const Bg = require("./actors/bg");
 
 class Game extends OpenGame {
   reset() {
@@ -16,6 +18,8 @@ class Game extends OpenGame {
   // 场景特有的角色一般在场景内创建
   createActors() {
     // TODO 游戏角色加载
+    this.actors.bg = new Bg(this, this.imgMaps.bg0);
+    this.actors.map = new Map(this);
   }
 
   // 创建场景

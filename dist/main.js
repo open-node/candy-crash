@@ -12,10 +12,300 @@ const resources = [
   }
 ];
 
-const game = new Game(canvas, Image, width, height, [320, 414], [500, 736]);
+const game = new Game(canvas, Image, width, height, [320, 414], [640, 812]);
+game.env = "production";
 game.init(resources);
 
-},{"./src/game":5}],2:[function(require,module,exports){
+},{"./src/game":6}],2:[function(require,module,exports){
+
+},{}],3:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],4:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+class Bg extends Actor {
+  render() {
+    this.game.drawImageByNameFullScreen("bg0");
+    this.game.drawImageAlignCenterByName("topBg0", 5);
+  }
+}
+
+module.exports = Bg;
+
+},{"open-game":9}],5:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+const BLOCKNUM = 5; // block 种类数量
+const ROWS = 10; // block 行数量
+const COLS = 10; // block 列数量
+const TOP = 200; // 顶部最少偏移量
+const BOTTOM = 50; // 底部最少偏移量, 多余的高度优先留个顶部
+const BLOCKSIZE = 34; // block 的size，宽等于高
+const GAP = 2; // block 之间的缝隙宽度
+const PRIM = 9973; // 辅助随机功能
+
+class Map extends Actor {
+  reset() {
+    this.x = (this.game.w - BLOCKSIZE * COLS - (COLS - 1) * GAP) >> 1;
+    this.y = this.game.h - BLOCKSIZE * ROWS - (ROWS - 1) * GAP - BOTTOM;
+    if (this.y < TOP) throw Error("画布太小无法展示");
+
+    // 记录当前地图中block的情况
+    this.code = [];
+    for (let i = 0; i < ROWS; i += 1) {
+      this.code[i] = [];
+      for (let j = 0; j < COLS; j += 1) {
+        this.code[i][j] = 1 + (((Math.random() * PRIM) | 0) % BLOCKNUM);
+      }
+    }
+    console.log(this.code);
+  }
+
+  render() {
+    for (let i = 0; i < ROWS; i += 1) {
+      for (let j = 0; j < COLS; j += 1) {
+        const x = this.x + i * (BLOCKSIZE + GAP);
+        const y = this.y + j * (BLOCKSIZE + GAP);
+        this.game.drawImageByName(`block${this.code[i][j]}`, x, y);
+      }
+    }
+  }
+}
+
+module.exports = Map;
+
+},{"open-game":9}],6:[function(require,module,exports){
+const OpenGame = require("open-game");
+const Start = require("./scenes/start");
+const Map = require("./actors/map");
+const Bg = require("./actors/bg");
+
+class Game extends OpenGame {
+  reset() {
+    this.debuggerInfoColor = "#ffffff";
+    this.scores = {
+      record: [],
+      curr: 0,
+      best: 0
+    };
+  }
+
+  // 创建角色, 并非游戏全部角色
+  // 这里创建的角色一般为多场景共用的单一角色
+  // 场景特有的角色一般在场景内创建
+  createActors() {
+    // TODO 游戏角色加载
+    this.actors.bg = new Bg(this, this.imgMaps.bg0);
+    this.actors.map = new Map(this);
+  }
+
+  // 创建场景
+  createScenes() {
+    // TODO 游戏场景加载
+    this.scenes.start = new Start(this, "start");
+  }
+}
+
+module.exports = Game;
+
+},{"./actors/bg":4,"./actors/map":5,"./scenes/start":7,"open-game":9}],7:[function(require,module,exports){
+const { Scene } = require("open-game");
+
+class Start extends Scene {
+  update() {}
+
+  enter() {
+    this.actors = ["bg", "map"];
+  }
+}
+
+module.exports = Start;
+
+},{"open-game":9}],8:[function(require,module,exports){
 /**
  * Actor 类
  * @class
@@ -117,24 +407,76 @@ class Actor {
 
 module.exports = Actor;
 
-},{}],3:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
+(function (process){
 const Actor = require("./actor");
 const Scene = require("./scene");
+
+// 获取执行环境，wx, browser，node
+const env = (() => {
+  if (typeof window === "object") return "browser";
+  if (typeof wx === "object") return "wx";
+  if (typeof process === "object") return "node";
+  throw Error("未知环境");
+})();
+
+/* eslint-disable no-undef */
+const fetchFns = {
+  wx(url) {
+    return Promise.resolve({
+      text() {
+        return new Promise((success, fail) => {
+          wx.request({ url, success, fail });
+        });
+      }
+    });
+  },
+  browser(url) {
+    return window.fetch(url);
+  },
+  node(url) {
+    /* eslint-disable global-require */
+    const fs = require("fs");
+    /* eslint-enable global-require */
+    return Promise.resolve({
+      text() {
+        return Promise.resolve(fs.readFileSync(url).toString());
+      }
+    });
+  }
+};
+
+const requestAnimationFrameFns = {
+  wx(callback) {
+    return wx.requestAnimationFrame(callback);
+  },
+  browser(callback) {
+    return window.requestAnimationFrame(callback);
+  },
+  node(callback) {
+    return setTimeout(callback, 17);
+  }
+};
+/* eslint-enable no-undef */
+
+const fetch = fetchFns[env];
+const requestAnimationFrame = requestAnimationFrameFns[env];
 
 /**
  * Game 类
  * @class
- * @param {Object} convas DOM对象，或者node.js 下 require('canvas').createCanvas()
- * @param {Class} Image 图片构造函数，浏览器下为 window.Image, node.js 下为 require('canvas').Image
+ *
+ * @param {Object} canvas DOM对象，或者node.js 下 require('canvas').createCanvas()
+ * @param {Function} Image 图片构造函数，浏览器下为 window.Image, node.js 下为 require('canvas').Image
  * @param {Number} width 期望的画布宽度，浏览器下全拼为 document.documentElement.clientWidth
  * @param {Number} height 期望的画布高度，浏览器下全拼为 document.documentElement.clientHeight
- * @param {Array.Number} [widthRange] 画布宽度取值范围，不设置则宽度严格等于 width
- * @param {Array.Number} [heightRange] 画布高度取值范围，不设置则宽度严格等于 heigth
+ * @param {[Number]} [widthRange] 画布宽度取值范围，不设置则宽度严格等于 width
+ * @param {[Number]} [heightRange] 画布高度取值范围，不设置则宽度严格等于 heigth
  */
 class Game {
   /** Create a game instance */
   constructor(canvas, Image, width, height, widthRange, heightRange) {
-    this.debuggerInfoColor = '#000000';
+    this.debuggerInfoColor = "#000000";
     this.env = "development"; // 控制游戏是什么模式
     this.fno = 0; // 程序主帧
     this.isPause = false; // 游戏是否暂停
@@ -207,6 +549,7 @@ class Game {
 
   // 开始事件监听
   listenEvent() {
+    if (typeof document === "undefined" && typeof wx === "undefined") return;
     const eventName = "ontouchstart" in document ? "ontouchstart" : "onclick";
     this.canvas[eventName] = this.clickHandler.bind(this);
   }
@@ -240,15 +583,14 @@ class Game {
     this.scene.update();
     // 场景渲染
     this.scene.render();
+    // 输出调试信息
+    if (this.env === "development") this.debugg();
     // 事件函数执行
     const handlers = this.callbacks.get(this.fno);
     if (handlers) {
       for (const handler of handlers) handler();
       this.callbacks.delete(this.fno);
     }
-
-    // 输出调试信息
-    if (this.env === "development") this.debugg();
   }
 
   debugg() {
@@ -373,6 +715,24 @@ class Game {
    *
    * @return {void}
    */
+  drawImageByNameFullScreen(name) {
+    const args = this.drawImgs[name];
+    if (!args) throw Error("图片不存在");
+    args[5] = 0;
+    args[6] = 0;
+    args[7] = this.w;
+    args[8] = this.h;
+    this.ctx.drawImage(...args);
+  }
+
+  /**
+   * 绘制图片获取图片切片
+   * @param {string} name 图片名称
+   * @param {number} x 在画布上的x坐标
+   * @param {number} y 在画布上的y坐标
+   *
+   * @return {void}
+   */
   drawImageByName(name, x, y) {
     const args = this.drawImgs[name];
     if (!args) throw Error("图片不存在");
@@ -401,7 +761,8 @@ Game.Scene = Scene;
 
 module.exports = Game;
 
-},{"./actor":2,"./scene":4}],4:[function(require,module,exports){
+}).call(this,require('_process'))
+},{"./actor":8,"./scene":10,"_process":3,"fs":2}],10:[function(require,module,exports){
 /**
  * Scene 类
  * @class
@@ -476,47 +837,4 @@ class Scene {
 
 module.exports = Scene;
 
-},{}],5:[function(require,module,exports){
-const OpenGame = require("open-game");
-const Start = require("./scenes/start");
-
-class Game extends OpenGame {
-  reset() {
-    this.debuggerInfoColor = "#ffffff";
-    this.scores = {
-      record: [],
-      curr: 0,
-      best: 0
-    };
-  }
-
-  // 创建角色, 并非游戏全部角色
-  // 这里创建的角色一般为多场景共用的单一角色
-  // 场景特有的角色一般在场景内创建
-  createActors() {
-    // TODO 游戏角色加载
-  }
-
-  // 创建场景
-  createScenes() {
-    // TODO 游戏场景加载
-    this.scenes.start = new Start(this, "start");
-  }
-}
-
-module.exports = Game;
-
-},{"./scenes/start":6,"open-game":3}],6:[function(require,module,exports){
-const { Scene } = require("open-game");
-
-class Start extends Scene {
-  update() {}
-
-  enter() {
-    this.actors = ["map"];
-  }
-}
-
-module.exports = Start;
-
-},{"open-game":3}]},{},[1]);
+},{}]},{},[1]);

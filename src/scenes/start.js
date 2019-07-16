@@ -4,7 +4,7 @@ class Start extends Scene {
   update() {}
 
   enter() {
-    this.actors = ["map"];
+    this.actors = ["bg", "map"];
   }
 }
 
