@@ -21,7 +21,7 @@ class Map extends Actor {
     this.x = (this.game.w - blocksize * cols - (cols - 1) * gap) >> 1;
     this.y = this.game.h - blocksize * rows - (rows - 1) * gap - bottom;
     this.w = this.game.w - this.x * 2;
-    this.h = this.y - bottom;
+    this.h = this.game.h - this.y - bottom;
     if (this.y < top) throw Error("画布太小无法展示");
 
     // 记录鼠标移动的位置
@@ -68,7 +68,7 @@ class Map extends Actor {
 
     if (!this.isItOn(x, y)) return;
     // 按下的时候同时开始监听移动，这就是拖拽效果
-    this.game.listenEvent("onmousemove", "onmousemove", "mousemove");
+    this.game.listenEvent("onmousemove", "touchmove", "mousemove");
 
     // 根据 x, y 来计算应该是哪个 block 被点击，这样比挨个尝试速度快很多
     this.currActived = this.who(x, y);

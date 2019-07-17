@@ -38,7 +38,7 @@ class Game extends OpenGame {
 
   // 创建场景
   createScenes() {
-    // TODO 游戏场景加载
+    // 游戏场景加载
     this.scenes.start = new Start(this, "start");
   }
 }
