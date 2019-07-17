@@ -6,6 +6,10 @@ const Bg = require("./actors/bg");
 class Game extends OpenGame {
   reset() {
     this.debuggerInfoColor = "#ffffff";
+    this.eventListeners = [
+      ["ontouchstart", "onmousedown", "mousedown"],
+      ["ontouchend", "onmouseup", "mouseup"]
+    ];
     this.scores = {
       record: [],
       curr: 0,
@@ -27,7 +31,7 @@ class Game extends OpenGame {
   // 这里创建的角色一般为多场景共用的单一角色
   // 场景特有的角色一般在场景内创建
   createActors() {
-    // TODO 游戏角色加载
+    // 游戏角色加载
     this.actors.bg = new Bg(this, this.imgMaps.bg0);
     this.actors.map = new Map(this);
   }

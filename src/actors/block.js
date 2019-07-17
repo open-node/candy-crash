@@ -46,7 +46,7 @@ class Block extends Actor {
     }
   }
 
-  click(x, y) {
+  mousedown(x, y) {
     this.actived = this.isItOn(x, y);
     return this.actived;
   }
