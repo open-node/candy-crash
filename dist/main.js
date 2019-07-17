@@ -221,39 +221,41 @@ module.exports = Bg;
 const { Actor } = require("open-game");
 
 class Block extends Actor {
-  constructor(game, code, r, c, ox, oy) {
+  constructor(game, code, x, y) {
     super(game, game.imgMaps[`block${code}`]);
     this.code = code;
-    this.r = r;
-    this.c = c;
-    this.ox = ox;
-    this.oy = oy;
-    this.gap = this.game.opts.gap;
-    this.prim = this.game.opts.prim;
 
     // 是否被点击选中
     this.actived = false;
     this.alpha = 1; // 选中后的效果
     this.da = 0.03; // 透明度变化量
 
-    [this.x, this.y] = this.calc(r, c);
-    this.frames = 0; // 运动剩余帧数
-    this.tr = 0; // 运动目标行号
-    this.tc = 0; // 运动目标列号
+    this.x = x;
+    this.y = y;
+
+    // 处理爆炸效果的相关属性
+    this.bombingFrames = 0; // 爆炸效果剩余帧数
+    this.bombAlpha = 1; // 淡出效果
+    this.bombed = false;
+
+    // 处理运动相关的属性
+    this.movingFrames = 0; // 运动剩余帧数
     this.tx = 0; // 运动目标x坐标
     this.ty = 0; // 运动目标y坐标
   }
 
-  calc(r, c) {
-    return [
-      this.ox + r * (this.w + this.gap),
-      this.oy + c * (this.w + this.gap)
-    ];
-  }
-
   update() {
+    if (this.bombed) return;
+
+    // 爆炸消失效果
+    if (0 < this.bombingFrames) {
+      this.bombAlpha -= this.bombAlpha / this.bombingFrames;
+      this.bombingFrames -= 1;
+      if (this.bombingFrames === 0) this.bombed = true;
+    }
+
     // 处理运动及位移
-    if (0 < this.frames) {
+    if (0 < this.movingFrames) {
       this.x += (this.tx - this.x) / this.frames;
       this.y += (this.ty - this.y) / this.frames;
       this.frames -= 1;
@@ -266,27 +268,42 @@ class Block extends Actor {
     }
   }
 
-  mousedown(x, y) {
-    this.actived = this.isItOn(x, y);
-    return this.actived;
+  bomb(frames) {
+    // 防止除零错误，这里强制动画至少维持两帧
+    this.bombingFrames = Math.max(2, frames);
+    this.bombAlpha = 1;
   }
 
-  moveTo(frames, r, c) {
-    if (this.game.opts.rows <= r) throw Error("越界了");
-    if (this.game.opts.cols <= c) throw Error("越界了");
-    [this.tx, this.ty] = this.calc(r, c);
-    this.frames = frames;
-    this.tr = r;
-    this.tc = c;
+  moveTo(frames, tx, ty) {
+    this.tx = tx;
+    this.ty = ty;
+    this.movingFrames = frames;
   }
 
   render() {
+    if (this.bombed) return;
     if (this.actived) {
       // 绘制选中效果
       this.game.ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
       this.game.ctx.fillRect(this.x - 4, this.y - 4, this.w + 8, this.h + 8);
     }
+
+    if (this.bombingFrames) {
+      this.game.ctx.save();
+      this.game.ctx.globalAlpha = this.bombAlpha;
+    }
+
     this.game.drawImageByName(`block${this.code}`, this.x, this.y);
+
+    // TODO 调试信息
+    this.game.ctx.fillStyle = "rgba(0,0,0,1)";
+    this.game.ctx.fillText(
+      this.code,
+      this.x + this.w / 2 - 3,
+      this.y + 4 + this.h / 2
+    );
+
+    if (this.bombingFrames) this.game.ctx.restore();
   }
 }
 
@@ -308,6 +325,12 @@ class Map extends Actor {
       top,
       bottom
     } = this.game.opts;
+
+    this.blocksize = blocksize;
+    this.gap = gap;
+
+    // 记录将要被删除的block
+    this.willRemoved = null;
 
     // 记录当前被点击选中的块
     this.currActived = null;
@@ -335,26 +358,31 @@ class Map extends Actor {
         this.blocks[i][j] = new Block(
           this.game,
           this.code[i][j],
-          i,
-          j,
-          this.x,
-          this.y
+          ...this.where(i, j)
         );
       }
     }
   }
 
-  // 根据x, y 坐标值判断是那个block
-  who(x, y) {
+  // 根据行列号计算block所在的坐标起始点(左上角)
+  where(r, c) {
     return [
-      ((x - this.x) / (this.game.opts.blocksize + this.game.opts.gap)) | 0,
-      ((y - this.y) / (this.game.opts.blocksize + this.game.opts.gap)) | 0
+      this.x + c * (this.blocksize + this.gap),
+      this.y + r * (this.blocksize + this.gap)
+    ];
+  }
+
+  // 根据x, y 坐标值判断是那个block
+  which(x, y) {
+    return [
+      ((y - this.y) / (this.blocksize + this.gap)) | 0,
+      ((x - this.x) / (this.blocksize + this.gap)) | 0
     ];
   }
 
   removeActived() {
-    const [r, c] = this.currActived;
-    this.blocks[r][c].actived = false;
+    const [c, r] = this.currActived;
+    this.blocks[c][r].actived = false;
     this.currActived = null;
   }
 
@@ -366,7 +394,7 @@ class Map extends Actor {
     this.game.listenEvent("onmousemove", "touchmove", "mousemove");
 
     // 根据 x, y 来计算应该是哪个 block 被点击，这样比挨个尝试速度快很多
-    this.currActived = this.who(x, y);
+    this.currActived = this.which(x, y);
     this.blocks[this.currActived[0]][this.currActived[1]].actived = true;
   }
 
@@ -379,14 +407,16 @@ class Map extends Actor {
   }
 
   mousemove(x, y) {
-    if (this.currActived) {
+    if (this.currActived && this.isItOn(x, y)) {
       const [r, c] = this.currActived;
-      const [i, j] = this.who(x, y);
+      const [i, j] = this.which(x, y);
       if (
+        // 要交换的二者不一样，一样交换没有意义
+        this.code[r][c] !== this.code[i][j] &&
         // 上下判断，列号相同，行号相差一
-        (c === j && Math.abs(r - i) === 1) ||
-        // 左右判断判断, 行号相同，列号差一
-        (r === i && Math.abs(c - j) === 1)
+        ((c === j && Math.abs(r - i) === 1) ||
+          // 左右判断判断, 行号相同，列号差一
+          (r === i && Math.abs(c - j) === 1))
       ) {
         this.swap(r, c, i, j);
         // 移除移动事件监听
@@ -397,26 +427,53 @@ class Map extends Actor {
     }
   }
 
-  swap(r, c, i, j) {
+  // 计算将要被消除的块
+  calcWillBeRemoved() {
+    return null;
+  }
+
+  // remove 消除一个块
+  remove(r, c) {
+    this.blocks[r][c].bomb(10);
+    this.game.registCallback(10, () => {
+      this.blocks[r][c] = null;
+      this.code[r][c] = 0;
+    });
+  }
+
+  // 交换两个 block
+  swap(r, c, i, j, isValid = true) {
     // 图形交换
-    this.blocks[r][c].moveTo(10, i, j);
-    this.blocks[i][j].moveTo(10, r, c);
+    this.blocks[r][c].moveTo(10, ...this.where(i, j));
+    this.blocks[i][j].moveTo(10, ...this.where(r, c));
     // 数据交换
     this.game.registCallback(10, () => {
       let t = this.blocks[r][c];
       this.blocks[r][c] = this.blocks[i][j];
       this.blocks[i][j] = t;
+
       t = this.code[r][c];
       this.code[r][c] = this.code[i][j];
       this.code[i][j] = t;
+
+      // 判断是否需要验证，还原的时候也是用这个函数，但是不需要验证了。
+      if (isValid) {
+        this.willRemoved = this.calcWillBeRemoved();
+        if (!this.willRemoved) {
+          // 如果不能消除，说明刚才的交换是错误的，需要恢复
+          this.swap(i, j, r, c, false);
+        }
+      }
     });
   }
 
   render() {
     for (let i = 0; i < this.game.opts.rows; i += 1) {
       for (let j = 0; j < this.game.opts.cols; j += 1) {
-        this.blocks[i][j].update();
-        this.blocks[i][j].render();
+        const block = this.blocks[i][j];
+        if (!block) continue;
+        block.update();
+        block.render();
       }
     }
   }
