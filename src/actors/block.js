@@ -36,9 +36,9 @@ class Block extends Actor {
 
     // 处理运动及位移
     if (0 < this.movingFrames) {
-      this.x += (this.tx - this.x) / this.frames;
-      this.y += (this.ty - this.y) / this.frames;
-      this.frames -= 1;
+      this.x += (this.tx - this.x) / this.movingFrames;
+      this.y += (this.ty - this.y) / this.movingFrames;
+      this.movingFrames -= 1;
     }
 
     // 点击选中效果
