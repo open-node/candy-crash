@@ -48,6 +48,7 @@ class Block extends Actor {
 
   click(x, y) {
     this.actived = this.isItOn(x, y);
+    return this.actived;
   }
 
   moveTo(frames, r, c) {
