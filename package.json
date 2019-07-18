@@ -4,21 +4,18 @@
   "description": "Candy crash reomve game, base on canvas",
   "main": "index.js",
   "scripts": {
-    "build": "watchify index.js -o ./dist/main.js"
+    "build": "watchify index.js -o ./dist/main.js",
+    "build:wx": "watchify src/game.js -s Game -o ../candy-crash-4-wechat/js/game.js"
   },
   "repository": {
     "type": "git",
     "url": "git@github.com/open-node/candy-crash.git"
   },
-  "keywords": [
-    "canvas",
-    "game",
-    "2d",
-    "candy-crash"
-  ],
+  "keywords": ["canvas", "game", "2d", "candy-crash"],
   "author": "Redstone Zhao",
   "license": "MIT",
   "devDependencies": {
+    "browserify": "^16.3.0",
     "canvas": "^2.5.0",
     "watchify": "^3.11.1"
   },

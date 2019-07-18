@@ -579,6 +579,8 @@ class Map extends Actor {
   }
 
   render() {
+    this.game.ctx.fillStyle = "rgba(0, 0, 0, 0.37)";
+    this.game.ctx.fillRect(this.x - 5, this.y - 5, this.w + 10, this.h + 10);
     for (let i = 0; i < this.game.opts.rows; i += 1) {
       for (let j = 0; j < this.game.opts.cols; j += 1) {
         const block = this.blocks[i][j];

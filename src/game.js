@@ -2,13 +2,14 @@ const OpenGame = require("open-game");
 const Start = require("./scenes/start");
 const Map = require("./actors/map");
 const Bg = require("./actors/bg");
+const Avatar = require("./actors/avatar");
 
 class Game extends OpenGame {
   reset() {
     this.debuggerInfoColor = "#ffffff";
     this.eventListeners = [
-      ["ontouchstart", "onmousedown", "mousedown"],
-      ["ontouchend", "onmouseup", "mouseup"]
+      ["onmousedown", "mousedown"],
+      ["onmouseup", "mouseup"]
     ];
     this.scores = {
       record: [],
@@ -40,6 +41,12 @@ class Game extends OpenGame {
   createScenes() {
     // 游戏场景加载
     this.scenes.start = new Start(this, "start");
+  }
+
+  // wxUserInit
+  wxUserInit(userInfo) {
+    if (this.platform.env !== "wx") return;
+    this.actors.avatar = new Avatar(this, userInfo.avatarUrl);
   }
 }
 

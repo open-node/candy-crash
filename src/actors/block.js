@@ -77,10 +77,11 @@ class Block extends Actor {
 
     // TODO 调试信息
     this.game.ctx.fillStyle = "rgba(0,0,0,1)";
+    this.game.ctx.font = "12px 宋体";
     this.game.ctx.fillText(
       this.code,
       this.x + this.w / 2 - 3,
-      this.y + 4 + this.h / 2
+      this.y + 5 + this.h / 2
     );
 
     if (this.bombingFrames) this.game.ctx.restore();

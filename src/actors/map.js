@@ -89,7 +89,7 @@ class Map extends Actor {
 
     if (!this.isItOn(x, y)) return;
     // 按下的时候同时开始监听移动，这就是拖拽效果
-    this.game.listenEvent("ontouchmove", "onmousemove", "mousemove");
+    this.game.listenEvent("onmousemove", "mousemove");
 
     // 根据 x, y 来计算应该是哪个 block 被点击，这样比挨个尝试速度快很多
     this.currActived = this.which(x, y);
@@ -267,6 +267,8 @@ class Map extends Actor {
   }
 
   render() {
+    this.game.ctx.fillStyle = "rgba(0, 0, 0, 0.37)";
+    this.game.ctx.fillRect(this.x - 5, this.y - 5, this.w + 10, this.h + 10);
     for (let i = 0; i < this.game.opts.rows; i += 1) {
       for (let j = 0; j < this.game.opts.cols; j += 1) {
         const block = this.blocks[i][j];
