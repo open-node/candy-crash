@@ -2,7 +2,9 @@ const OpenGame = require("open-game");
 const Start = require("./scenes/start");
 const Map = require("./actors/map");
 const Bg = require("./actors/bg");
+const TopBg = require("./actors/top-bg");
 const Avatar = require("./actors/avatar");
+const Numbers = require("./actors/numbers");
 
 class Game extends OpenGame {
   reset() {
@@ -11,11 +13,6 @@ class Game extends OpenGame {
       ["onmousedown", "mousedown"],
       ["onmouseup", "mouseup"]
     ];
-    this.scores = {
-      record: [],
-      curr: 0,
-      best: 0
-    };
 
     // 定义游戏区域关键数据
     const cols = 7;
@@ -41,8 +38,11 @@ class Game extends OpenGame {
   // 场景特有的角色一般在场景内创建
   createActors() {
     // 游戏角色加载
-    this.actors.bg = new Bg(this, this.imgMaps.bg0);
+    this.actors.bg = new Bg(this);
+    this.actors.topBg = new TopBg(this);
     this.actors.map = new Map(this);
+    const scoreY = (this.actors.topBg.h >> 1) - 35;
+    this.actors.score = new Numbers(this, 0.5, 0, 0, scoreY, 5, "center");
   }
 
   // 创建场景

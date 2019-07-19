@@ -1,5 +1,6 @@
 const { Actor } = require("open-game");
 const Block = require("./block");
+const Timer = require("./timer");
 
 class Map extends Actor {
   reset() {
@@ -20,8 +21,8 @@ class Map extends Actor {
     this.prim = prim;
     this.gap = gap;
 
-    // 记录将要被删除的block
-    this.willRemoved = null;
+    // 记录一次性消除的blocks数量，连续消除也算
+    this.removedBlocks = 0;
 
     // 记录当前被点击选中的块
     this.currActived = null;
@@ -56,6 +57,25 @@ class Map extends Actor {
     // 4. suppling 补充状态, 消除之后，对齐之后，需要补充新的 block 进来
     // 4. animation 动画状态, 各种补间动画状态
     this.fsm = "removing"; // 初始就是判断消除状态
+
+    // 初始化定时器
+    this.game.actors.timer = new Timer(
+      this.game,
+      { w: this.w - this.x * 2, h: 20 },
+      this.x,
+      this.y - 35,
+      7200, // 7200 帧
+      () => {
+        this.fsm = "end";
+      }
+    );
+  }
+
+  calcScore(nums) {
+    if (!nums) return 0;
+    const times = nums >> 1;
+
+    return nums * times;
   }
 
   // 根据行列号计算block所在的坐标起始点(左上角)
@@ -183,8 +203,7 @@ class Map extends Actor {
 
       // 判断是否需要验证，还原的时候也是用这个函数，但是不需要验证了。
       if (isValid) {
-        this.willRemoved = this.calcWillBeRemoved();
-        if (!this.willRemoved) {
+        if (!this.calcWillBeRemoved()) {
           // 如果不能消除，说明刚才的交换是错误的，需要恢复
           this.swap(i, j, r, c, false);
         } else {
@@ -231,15 +250,21 @@ class Map extends Actor {
 
   update() {
     if (this.fsm === "removing") {
-      this.willRemoved = this.calcWillBeRemoved();
+      const willRemoved = this.calcWillBeRemoved();
       // 如果没有需要消除的，则进入静稳状态
-      if (!this.willRemoved) {
+      if (!willRemoved) {
+        // 如果有消除掉块，则加分
+        this.game.actors.score.add(this.calcScore(this.removedBlocks));
+
+        // 分数已经加完，重置计数器
+        this.removedBlocks = 0;
         this.fsm = "stable";
       } else {
+        this.removedBlocks += willRemoved.length;
         // 反之需要消除，进入动画状态
         this.fsm = "animation";
         // 移除这些模块
-        this.willRemoved.forEach(x => this.remove(20, ...x));
+        willRemoved.forEach(x => this.remove(20, ...x));
         // 动画结束后进入下落状态
         this.game.registCallback(20, () => {
           this.fsm = "falling";
