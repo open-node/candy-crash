@@ -258,6 +258,8 @@ class Map extends Actor {
 
   update() {
     if (this.fsm === "removing") {
+      // 暂停计时器
+      this.game.actors.timer.stop();
       const willRemoved = this.calcWillBeRemoved();
       // 如果没有需要消除的，则进入静稳状态
       if (!willRemoved) {
@@ -276,8 +278,12 @@ class Map extends Actor {
           // 动画结束后进入消除状态
           this.game.registCallback(20, () => {
             this.fsm = "stable";
+            // 继续计时器
+            this.game.actors.timer.run();
           });
         } else {
+          // 继续计时器
+          this.game.actors.timer.run();
           this.fsm = "stable";
         }
       } else {
@@ -292,6 +298,8 @@ class Map extends Actor {
         });
       }
     } else if (this.fsm === "falling") {
+      // 暂停计时器
+      this.game.actors.timer.stop();
       // 下落
       this.fall(20);
       // 进入动画状态
@@ -301,6 +309,8 @@ class Map extends Actor {
         this.fsm = "suppling";
       });
     } else if (this.fsm === "suppling") {
+      // 暂停计时器
+      this.game.actors.timer.stop();
       this.supply(20);
       // 进入动画状态
       this.fsm = "animation";

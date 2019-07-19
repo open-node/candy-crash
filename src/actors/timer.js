@@ -11,12 +11,23 @@ class Timer extends Actor {
     this.callback = callback;
   }
 
+  // stop
+  stop() {
+    this.isStoped = true;
+  }
+
+  // 继续运行计时器
+  run() {
+    this.isStoped = false;
+  }
+
   // 奖励时间或者惩罚时间，看 frames 参数的正负情况
   add(frames) {
     this.frames += frames;
   }
 
   update() {
+    if (this.isStoped) return;
     if (this.frames === 0) {
       this.callback();
       return;
