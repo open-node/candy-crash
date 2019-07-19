@@ -10,8 +10,7 @@ class Map extends Actor {
       rows,
       prim,
       gap,
-      top,
-      bottom
+      padding: [top, , bottom, left]
     } = this.game.opts;
 
     this.rows = rows;
@@ -28,7 +27,7 @@ class Map extends Actor {
     this.currActived = null;
 
     // 计算地图区域的起始坐标以及宽高
-    this.x = (this.game.w - blocksize * cols - (cols - 1) * gap) >> 1;
+    this.x = left;
     this.y = this.game.h - blocksize * rows - (rows - 1) * gap - bottom;
     this.w = this.game.w - this.x * 2;
     this.h = this.game.h - this.y - bottom;
@@ -267,8 +266,6 @@ class Map extends Actor {
   }
 
   render() {
-    this.game.ctx.fillStyle = "rgba(0, 0, 0, 0.37)";
-    this.game.ctx.fillRect(this.x - 5, this.y - 5, this.w + 10, this.h + 10);
     for (let i = 0; i < this.game.opts.rows; i += 1) {
       for (let j = 0; j < this.game.opts.cols; j += 1) {
         const block = this.blocks[i][j];

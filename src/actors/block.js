@@ -2,7 +2,7 @@ const { Actor } = require("open-game");
 
 class Block extends Actor {
   constructor(game, code, x, y) {
-    super(game, game.imgMaps[`block${code}`]);
+    super(game, { w: game.opts.blocksize, h: game.opts.blocksize });
     this.code = code;
 
     // 是否被点击选中
@@ -72,18 +72,13 @@ class Block extends Actor {
       this.game.ctx.save();
       this.game.ctx.globalAlpha = this.bombAlpha;
     }
-
-    this.game.drawImageByName(`block${this.code}`, this.x, this.y);
-
-    // TODO 调试信息
-    this.game.ctx.fillStyle = "rgba(0,0,0,1)";
-    this.game.ctx.font = "12px 宋体";
-    this.game.ctx.fillText(
-      this.code,
-      this.x + this.w / 2 - 3,
-      this.y + 5 + this.h / 2
+    this.game.drawImageByName(
+      `block${this.code}`,
+      this.x,
+      this.y,
+      this.w,
+      this.h
     );
-
     if (this.bombingFrames) this.game.ctx.restore();
   }
 }
