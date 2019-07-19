@@ -71,6 +71,14 @@ class Map extends Actor {
     );
   }
 
+  calcPraise(score) {
+    if (score < 50) return null;
+    if (1000 <= score) return "perfect";
+    if (500 <= score) return "veryGood";
+    if (200 <= score) return "beautiful";
+    return "good";
+  }
+
   calcScore(nums) {
     if (!nums) return 0;
     const times = nums >> 1;
@@ -254,11 +262,24 @@ class Map extends Actor {
       // 如果没有需要消除的，则进入静稳状态
       if (!willRemoved) {
         // 如果有消除掉块，则加分
-        this.game.actors.score.add(this.calcScore(this.removedBlocks));
-
+        const score = this.calcScore(this.removedBlocks);
+        this.game.actors.score.add(score);
         // 分数已经加完，重置计数器
         this.removedBlocks = 0;
-        this.fsm = "stable";
+
+        // 判断是否需要赞美一下
+        const praise = this.calcPraise(score);
+        if (praise) {
+          this.game.actors.praise.show(60, praise);
+          // 进入动画状态
+          this.fsm = "animation";
+          // 动画结束后进入消除状态
+          this.game.registCallback(20, () => {
+            this.fsm = "stable";
+          });
+        } else {
+          this.fsm = "stable";
+        }
       } else {
         this.removedBlocks += willRemoved.length;
         // 反之需要消除，进入动画状态
