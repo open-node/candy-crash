@@ -4,8 +4,6 @@ const Map = require("./actors/map");
 const Bg = require("./actors/bg");
 const TopBg = require("./actors/top-bg");
 const Avatar = require("./actors/avatar");
-const Numbers = require("./actors/numbers");
-const Praise = require("./actors/praise");
 
 class Game extends OpenGame {
   reset() {
@@ -42,9 +40,6 @@ class Game extends OpenGame {
     this.actors.bg = new Bg(this);
     this.actors.topBg = new TopBg(this);
     this.actors.map = new Map(this);
-    const scoreY = (this.actors.topBg.h >> 1) - 35;
-    this.actors.score = new Numbers(this, 0.5, 0, 0, scoreY, 5, "center");
-    this.actors.praise = new Praise(this);
   }
 
   // 创建场景

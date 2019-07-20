@@ -1,9 +1,12 @@
 const { Actor } = require("open-game");
 const Block = require("./block");
 const Timer = require("./timer");
+const ImageEffect = require("./image-effect");
+const Numbers = require("./numbers");
 
 class Map extends Actor {
   reset() {
+    const { game } = this;
     const {
       blocksize,
       blocknum,
@@ -12,7 +15,7 @@ class Map extends Actor {
       prim,
       gap,
       padding: [top, , bottom, left]
-    } = this.game.opts;
+    } = game.opts;
 
     this.rows = rows;
     this.cols = cols;
@@ -29,9 +32,9 @@ class Map extends Actor {
 
     // 计算地图区域的起始坐标以及宽高
     this.x = left;
-    this.y = this.game.h - blocksize * rows - (rows - 1) * gap - bottom;
-    this.w = this.game.w - this.x * 2;
-    this.h = this.game.h - this.y - bottom;
+    this.y = game.h - blocksize * rows - (rows - 1) * gap - bottom;
+    this.w = game.w - this.x * 2;
+    this.h = game.h - this.y - bottom;
     if (this.y < top) throw Error("画布太小无法展示");
 
     // 记录鼠标移动的位置
@@ -45,7 +48,7 @@ class Map extends Actor {
       for (let j = 0; j < cols; j += 1) {
         // 编号从1开始
         const code = this.random();
-        this.blocks[i][j] = new Block(this.game, code, ...this.where(i, j));
+        this.blocks[i][j] = new Block(game, code, ...this.where(i, j));
       }
     }
 
@@ -55,18 +58,46 @@ class Map extends Actor {
     // 2. removing 判断并消除状态
     // 3. falling 下落状态, 消除后有些空隙，下落对齐
     // 4. suppling 补充状态, 消除之后，对齐之后，需要补充新的 block 进来
-    // 4. animation 动画状态, 各种补间动画状态
+    // 5. end 游戏结束状态
+    // 6. animation 动画状态, 各种补间动画状态
     this.fsm = "removing"; // 初始就是判断消除状态
 
     // 初始化定时器
-    this.game.actors.timer = new Timer(
+    game.actors.timer = new Timer(
       this.game,
       { w: this.w - this.x * 2, h: 20 },
       this.x,
       this.y - 35,
-      7200, // 7200 帧
+      600, // 7200 帧
       () => {
         this.fsm = "end";
+        this.game.actors.replay.show();
+      }
+    );
+
+    // 积分系统
+    const scoreY = (game.actors.topBg.h >> 1) - 35;
+    game.actors.score = new Numbers(game, 0.5, 0, 0, scoreY, 5, "center");
+
+    // 赞美系列
+    game.actors.good = new ImageEffect(game, "good", "center", "gold");
+    game.actors.veryGood = new ImageEffect(game, "veryGood", "center", "gold");
+    game.actors.beautiful = new ImageEffect(
+      game,
+      "beautiful",
+      "center",
+      "gold"
+    );
+    game.actors.perfect = new ImageEffect(game, "perfect", "center", "gold");
+    // 重玩按钮
+    game.actors.replay = new ImageEffect(
+      game,
+      "replay",
+      "center",
+      "gold",
+      () => {
+        game.actors.replay.hide(36);
+        game.registCallback(36, this.reset.bind(this));
       }
     );
   }
@@ -272,7 +303,8 @@ class Map extends Actor {
         // 判断是否需要赞美一下
         const praise = this.calcPraise(score);
         if (praise) {
-          this.game.actors.praise.show(60, praise);
+          this.game.actors[praise].show();
+          this.game.actors[praise].hide(60);
           // 进入动画状态
           this.fsm = "animation";
           // 动画结束后进入消除状态

@@ -6,6 +6,8 @@ class Timer extends Actor {
     this.frames = frames; // 实时记录剩余帧数
     this.total = frames; // 记录初始的帧数，最为100%的参考
     this.percent = 1;
+    this.red = 0;
+    this.green = 255;
     this.x = x;
     this.y = y;
     this.callback = callback;
@@ -29,6 +31,7 @@ class Timer extends Actor {
   update() {
     if (this.isStoped) return;
     if (this.frames === 0) {
+      this.stop(); // 这里先要停止计时器，否则callback可能会被多次执行
       this.callback();
       return;
     }
@@ -37,17 +40,21 @@ class Timer extends Actor {
     } else {
       this.percent = 1;
     }
+    if (this.percent <= 0.5) {
+      this.green = Math.max(this.percent * 2 * 255, 0);
+      this.red = 255;
+    } else {
+      this.green = 255;
+      this.red = Math.min((1 - this.percent) * 2 * 255, 255);
+    }
     this.frames -= 1;
   }
 
   render() {
     const { ctx } = this.game;
     ctx.save();
-    ctx.clearRect(0, 0, this.w, this.h);
-    ctx.strokeStyle = "rgba(255, 55, 20, 1)";
-    ctx.lineWidth = 4;
     ctx.strokeRect(this.x + 3, this.y, this.w, this.h);
-    ctx.fillStyle = "rgba(30, 255, 10, 1)";
+    ctx.fillStyle = `rgb(${this.red | 0}, ${this.green | 0}, 10)`;
     ctx.fillRect(
       this.x + 4 + 3,
       this.y + 4,
