@@ -1128,11 +1128,14 @@ class Tool extends Actor {
     this.game.ctx.restore();
 
     if (this.actived) {
+      this.game.ctx.save();
+      this.game.ctx.globalAlpha = 0.5;
       this.game.drawImageByName(
         this.name,
         this.mx - this.w / 2,
         this.my - this.h / 2
       );
+      this.game.ctx.restore();
     }
   }
 }
