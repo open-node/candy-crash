@@ -65,7 +65,7 @@ class ImageEffect extends Actor {
   }
 
   mousedown(x, y) {
-    if (!this.visable) return;
+    if (!this.visable || this.hiding) return;
     if (this.clickHandler && this.isItOn(x, y)) {
       this.clickHandler(x, y);
     }
