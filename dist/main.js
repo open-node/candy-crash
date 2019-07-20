@@ -1,25 +1,77 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+const resources = [
+  { name: "replay", type: "image", url: "images/replay.png" },
+  {
+    name: "numbers",
+    type: "image",
+    url: "images/numbers.png",
+    map: "images/numbers.txt"
+  },
+  { name: "avatar", type: "image", url: "images/avatar.png", scale: 0.5 },
+  { name: "beautiful", type: "image", url: "images/beautiful.png", scale: 0.5 },
+  { name: "bg0", type: "image", url: "images/bg0.png", scale: 0.5 },
+  { name: "block1", type: "image", url: "images/block1.png", scale: 0.5 },
+  { name: "block2", type: "image", url: "images/block2.png", scale: 0.5 },
+  { name: "block3", type: "image", url: "images/block3.png", scale: 0.5 },
+  { name: "block4", type: "image", url: "images/block4.png", scale: 0.5 },
+  { name: "block5", type: "image", url: "images/block5.png", scale: 0.5 },
+  { name: "bomb", type: "image", url: "images/bomb.png", scale: 0.5 },
+  {
+    name: "bombActive",
+    type: "image",
+    url: "images/bombActive.png",
+    scale: 0.5
+  },
+  {
+    name: "congrantLarge",
+    type: "image",
+    url: "images/congrantLarge.png",
+    scale: 0.5
+  },
+  {
+    name: "congrantSmall",
+    type: "image",
+    url: "images/congrantSmall.png",
+    scale: 0.5
+  },
+  { name: "goal1000", type: "image", url: "images/goal1000.png", scale: 0.5 },
+  { name: "good", type: "image", url: "images/good.png", scale: 0.5 },
+  { name: "hit", type: "image", url: "images/hit.png", scale: 0.5 },
+  { name: "hitActive", type: "image", url: "images/hitActive.png", scale: 0.5 },
+  { name: "iconBack", type: "image", url: "images/iconBack.png", scale: 0.5 },
+  { name: "magic", type: "image", url: "images/magic.png", scale: 0.5 },
+  { name: "perfect", type: "image", url: "images/perfect.png", scale: 0.5 },
+  { name: "ranking", type: "image", url: "images/ranking.png", scale: 0.5 },
+  { name: "reset", type: "image", url: "images/reset.png", scale: 0.5 },
+  {
+    name: "resetActive",
+    type: "image",
+    url: "images/resetActive.png",
+    scale: 0.5
+  },
+  { name: "soundOff", type: "image", url: "images/soundOff.png", scale: 0.5 },
+  { name: "soundOn", type: "image", url: "images/soundOn.png", scale: 0.5 },
+  { name: "topBg0", type: "image", url: "images/topBg0.png", scale: 0.5 },
+  { name: "veryGood", type: "image", url: "images/veryGood.png", scale: 0.5 }
+];
+
+module.exports = resources;
+
+},{}],2:[function(require,module,exports){
 const Game = require("./src/game");
+const resources = require("./images/resources");
 
 const canvas = document.getElementById("mycanvas");
 const { clientWidth: width, clientHeight: height } = document.documentElement;
-const resources = [
-  {
-    name: "atlas",
-    type: "image",
-    url: "./images/atlas.png",
-    map: "./images/atlas.map"
-  }
-];
 
 const game = new Game(canvas, Image, width, height, [320, 414], [640, 812]);
 game.env = "production";
 game.init(resources);
 window.game = game;
 
-},{"./src/game":7}],2:[function(require,module,exports){
+},{"./images/resources":1,"./src/game":13}],3:[function(require,module,exports){
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -205,24 +257,34 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+class Avatar extends Actor {
+  render() {
+    this.game.drawImageByName("userAvatar", 30, 60, 60, 60);
+  }
+}
+
+module.exports = Avatar;
+
+},{"open-game":16}],6:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class Bg extends Actor {
   render() {
     this.game.drawImageByNameFullScreen("bg0");
-    this.game.drawImageAlignCenterByName("topBg0", 5);
   }
 }
 
 module.exports = Bg;
 
-},{"open-game":10}],5:[function(require,module,exports){
+},{"open-game":16}],7:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class Block extends Actor {
   constructor(game, code, x, y) {
-    super(game, game.imgMaps[`block${code}`]);
+    super(game, { w: game.opts.blocksize, h: game.opts.blocksize });
     this.code = code;
 
     // 是否被点击选中
@@ -292,29 +354,135 @@ class Block extends Actor {
       this.game.ctx.save();
       this.game.ctx.globalAlpha = this.bombAlpha;
     }
-
-    this.game.drawImageByName(`block${this.code}`, this.x, this.y);
-
-    // TODO 调试信息
-    this.game.ctx.fillStyle = "rgba(0,0,0,1)";
-    this.game.ctx.fillText(
-      this.code,
-      this.x + this.w / 2 - 3,
-      this.y + 4 + this.h / 2
+    this.game.drawImageByName(
+      `block${this.code}`,
+      this.x,
+      this.y,
+      this.w,
+      this.h
     );
-
     if (this.bombingFrames) this.game.ctx.restore();
   }
 }
 
 module.exports = Block;
 
-},{"open-game":10}],6:[function(require,module,exports){
+},{"open-game":16}],8:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+class ImageEffect extends Actor {
+  constructor(game, name, align, rAlign, clickHandler) {
+    super(game, game.imgMaps[name]);
+    if (align) {
+      this.align = align;
+      this.xAlign(align);
+    }
+    if (rAlign) {
+      this.ralign = rAlign;
+      this.yAlign(rAlign);
+    }
+    this.name = name;
+    this.clickHandler = clickHandler;
+  }
+
+  xAlign(value) {
+    if (value === "left") {
+      this.x = 0;
+    } else if (value === "right") {
+      this.x = this.game.w - this.w;
+    } else if (value === "center") {
+      this.x = (this.game.w - this.w) / 2;
+    } else {
+      throw Error("不合法水平对齐方式， `left`, `right`, `center`");
+    }
+  }
+
+  yAlign(value) {
+    if (value === "top") {
+      this.y = 0;
+    } else if (value === "bottom") {
+      this.y = this.game.h - this.h;
+    } else if (value === "center") {
+      this.y = (this.game.h - this.h) / 2;
+    } else if (value === "gold") {
+      this.y = (this.game.h - this.h) * 0.618;
+    } else {
+      throw Error("不合法纵向对齐方式， `top`, `bottom`, `center`, `gold`");
+    }
+  }
+
+  show() {
+    this.frames = 0;
+    this.visable = true;
+    this.scale = 1;
+    this.alpha = 1;
+    this.dScale = 0;
+  }
+
+  hide(frames, scale = 0.01) {
+    this.dScale = scale;
+    this.hiding = true;
+    this.frames = frames;
+  }
+
+  update() {
+    if (this.frames) {
+      this.scale += this.dScale;
+      this.alpha -= this.alpha / this.frames;
+      this.frames -= 1;
+      if (!this.frames) this.visable = false;
+    }
+  }
+
+  mousedown(x, y) {
+    if (!this.visable || this.hiding) return;
+    if (this.clickHandler && this.isItOn(x, y)) {
+      this.clickHandler(x, y);
+    }
+  }
+
+  render() {
+    if (!this.visable) return;
+
+    if (this.hiding) {
+      this.game.ctx.save();
+      this.game.ctx.globalAlpha = this.alpha;
+    }
+
+    if (this.scale !== 1) {
+      if (this.align === "center") {
+        this.x = (this.game.w - this.w * this.scale) / 2;
+      }
+      if (this.rAlign === "center") {
+        this.y = (this.game.h - this.h * this.scale) / 2;
+      } else if (this.rAlign === "gold") {
+        this.y = (this.game.h - this.h * this.scale) * 0.618;
+      }
+    }
+
+    this.game.drawImageByName(
+      this.name,
+      this.x,
+      this.y,
+      this.w * this.scale,
+      this.h * this.scale
+    );
+    if (this.hiding) this.game.ctx.restore();
+  }
+}
+
+module.exports = ImageEffect;
+
+},{"open-game":16}],9:[function(require,module,exports){
 const { Actor } = require("open-game");
 const Block = require("./block");
+const Timer = require("./timer");
+const ImageEffect = require("./image-effect");
+const Numbers = require("./numbers");
 
 class Map extends Actor {
   reset() {
+    const { game } = this;
     const {
       blocksize,
       blocknum,
@@ -322,9 +490,8 @@ class Map extends Actor {
       rows,
       prim,
       gap,
-      top,
-      bottom
-    } = this.game.opts;
+      padding: [top, , bottom, left]
+    } = game.opts;
 
     this.rows = rows;
     this.cols = cols;
@@ -333,17 +500,17 @@ class Map extends Actor {
     this.prim = prim;
     this.gap = gap;
 
-    // 记录将要被删除的block
-    this.willRemoved = null;
+    // 记录一次性消除的blocks数量，连续消除也算
+    this.removedBlocks = 0;
 
     // 记录当前被点击选中的块
     this.currActived = null;
 
     // 计算地图区域的起始坐标以及宽高
-    this.x = (this.game.w - blocksize * cols - (cols - 1) * gap) >> 1;
-    this.y = this.game.h - blocksize * rows - (rows - 1) * gap - bottom;
-    this.w = this.game.w - this.x * 2;
-    this.h = this.game.h - this.y - bottom;
+    this.x = left;
+    this.y = game.h - blocksize * rows - (rows - 1) * gap - bottom;
+    this.w = game.w - this.x * 2;
+    this.h = game.h - this.y - bottom;
     if (this.y < top) throw Error("画布太小无法展示");
 
     // 记录鼠标移动的位置
@@ -352,14 +519,7 @@ class Map extends Actor {
 
     // 记录当前地图中block的情况
     this.blocks = [];
-    for (let i = 0; i < rows; i += 1) {
-      this.blocks[i] = [];
-      for (let j = 0; j < cols; j += 1) {
-        // 编号从1开始
-        const code = this.random();
-        this.blocks[i][j] = new Block(this.game, code, ...this.where(i, j));
-      }
-    }
+    for (let i = 0; i < rows; i += 1) this.blocks[i] = Array(cols);
 
     // 记录当前状态机状态
     // 利用有限状态机来管理各种状态
@@ -367,8 +527,63 @@ class Map extends Actor {
     // 2. removing 判断并消除状态
     // 3. falling 下落状态, 消除后有些空隙，下落对齐
     // 4. suppling 补充状态, 消除之后，对齐之后，需要补充新的 block 进来
-    // 4. animation 动画状态, 各种补间动画状态
-    this.fsm = "removing"; // 初始就是判断消除状态
+    // 5. end 游戏结束状态
+    // 6. animation 动画状态, 各种补间动画状态
+    this.fsm = "suppling"; // 初始状态补充blocks
+
+    // 初始化定时器
+    game.actors.timer = new Timer(
+      this.game,
+      { w: this.w - this.x * 2, h: 20 },
+      this.x,
+      this.y - 35,
+      7200, // 7200 帧
+      () => {
+        this.fsm = "end";
+        this.game.actors.replay.show();
+      }
+    );
+
+    // 积分系统
+    const scoreY = (game.actors.topBg.h >> 1) - 35;
+    game.actors.score = new Numbers(game, 0.5, 0, 0, scoreY, 5, "center");
+
+    // 赞美系列
+    game.actors.good = new ImageEffect(game, "good", "center", "gold");
+    game.actors.veryGood = new ImageEffect(game, "veryGood", "center", "gold");
+    game.actors.beautiful = new ImageEffect(
+      game,
+      "beautiful",
+      "center",
+      "gold"
+    );
+    game.actors.perfect = new ImageEffect(game, "perfect", "center", "gold");
+    // 重玩按钮
+    game.actors.replay = new ImageEffect(
+      game,
+      "replay",
+      "center",
+      "gold",
+      () => {
+        game.actors.replay.hide(36);
+        game.registCallback(36, this.reset.bind(this));
+      }
+    );
+  }
+
+  calcPraise(score) {
+    if (score < 50) return null;
+    if (1000 <= score) return "perfect";
+    if (500 <= score) return "veryGood";
+    if (200 <= score) return "beautiful";
+    return "good";
+  }
+
+  calcScore(nums) {
+    if (!nums) return 0;
+    const times = nums >> 1;
+
+    return nums * times;
   }
 
   // 根据行列号计算block所在的坐标起始点(左上角)
@@ -401,7 +616,7 @@ class Map extends Actor {
 
     if (!this.isItOn(x, y)) return;
     // 按下的时候同时开始监听移动，这就是拖拽效果
-    this.game.listenEvent("ontouchmove", "onmousemove", "mousemove");
+    this.game.listenEvent("onmousemove", "mousemove");
 
     // 根据 x, y 来计算应该是哪个 block 被点击，这样比挨个尝试速度快很多
     this.currActived = this.which(x, y);
@@ -496,8 +711,7 @@ class Map extends Actor {
 
       // 判断是否需要验证，还原的时候也是用这个函数，但是不需要验证了。
       if (isValid) {
-        this.willRemoved = this.calcWillBeRemoved();
-        if (!this.willRemoved) {
+        if (!this.calcWillBeRemoved()) {
           // 如果不能消除，说明刚才的交换是错误的，需要恢复
           this.swap(i, j, r, c, false);
         } else {
@@ -544,21 +758,49 @@ class Map extends Actor {
 
   update() {
     if (this.fsm === "removing") {
-      this.willRemoved = this.calcWillBeRemoved();
+      // 暂停计时器
+      this.game.actors.timer.stop();
+      const willRemoved = this.calcWillBeRemoved();
       // 如果没有需要消除的，则进入静稳状态
-      if (!this.willRemoved) {
-        this.fsm = "stable";
+      if (!willRemoved) {
+        // 如果有消除掉块，则加分
+        const score = this.calcScore(this.removedBlocks);
+        this.game.actors.score.add(score);
+        // 分数已经加完，重置计数器
+        this.removedBlocks = 0;
+
+        // 判断是否需要赞美一下
+        const praise = this.calcPraise(score);
+        if (praise) {
+          this.game.actors[praise].show();
+          this.game.actors[praise].hide(60);
+          // 进入动画状态
+          this.fsm = "animation";
+          // 动画结束后进入消除状态
+          this.game.registCallback(20, () => {
+            this.fsm = "stable";
+            // 继续计时器
+            this.game.actors.timer.run();
+          });
+        } else {
+          // 继续计时器
+          this.game.actors.timer.run();
+          this.fsm = "stable";
+        }
       } else {
+        this.removedBlocks += willRemoved.length;
         // 反之需要消除，进入动画状态
         this.fsm = "animation";
         // 移除这些模块
-        this.willRemoved.forEach(x => this.remove(20, ...x));
+        willRemoved.forEach(x => this.remove(20, ...x));
         // 动画结束后进入下落状态
         this.game.registCallback(20, () => {
           this.fsm = "falling";
         });
       }
     } else if (this.fsm === "falling") {
+      // 暂停计时器
+      this.game.actors.timer.stop();
       // 下落
       this.fall(20);
       // 进入动画状态
@@ -568,6 +810,8 @@ class Map extends Actor {
         this.fsm = "suppling";
       });
     } else if (this.fsm === "suppling") {
+      // 暂停计时器
+      this.game.actors.timer.stop();
       this.supply(20);
       // 进入动画状态
       this.fsm = "animation";
@@ -579,8 +823,6 @@ class Map extends Actor {
   }
 
   render() {
-    this.game.ctx.fillStyle = "rgba(0, 0, 0, 0.37)";
-    this.game.ctx.fillRect(this.x - 5, this.y - 5, this.w + 10, this.h + 10);
     for (let i = 0; i < this.game.opts.rows; i += 1) {
       for (let j = 0; j < this.game.opts.cols; j += 1) {
         const block = this.blocks[i][j];
@@ -594,32 +836,195 @@ class Map extends Actor {
 
 module.exports = Map;
 
-},{"./block":5,"open-game":10}],7:[function(require,module,exports){
+},{"./block":7,"./image-effect":8,"./numbers":10,"./timer":11,"open-game":16}],10:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+class Numbers extends Actor {
+  constructor(game, scale, value, ox, oy, gap, align = "left", rAlign = "top") {
+    super(game);
+    this.gap = gap;
+    this.scale = scale;
+    this.align = align;
+    this.rAlign = rAlign;
+    this.ox = ox; // 横轴偏移量
+    this.oy = oy; // 中轴偏移量
+    this.h = this.game.imgMaps.number0.h * this.scale;
+    this.value = 0;
+    this.add(value);
+  }
+
+  add(value) {
+    this.value += value;
+    this.str = `${this.value}`;
+    const len = this.str.length;
+
+    this.w = 0;
+    for (let i = 0; i < len; i += 1) {
+      this.w += this.game.imgMaps[`number${this.str[i]}`].w * this.scale;
+    }
+    this.w += this.gap * (len - 1);
+
+    // 处理 x 轴对齐方式
+    if (this.align === "center") {
+      this.x = ((this.game.w - this.w) >> 1) + this.ox;
+    } else if (this.align === "left") {
+      this.x = this.ox;
+    } else if (this.align === "right") {
+      this.x = this.game.w - this.ox - this.w;
+    }
+
+    // 处理 y 轴对齐方式
+    if (this.rAlign === "middle") {
+      this.y = (this.game.h - this.h) >> 1;
+    } else if (this.rAlign === "top") {
+      this.y = this.oy;
+    } else if (this.rAlign === "bottom") {
+      this.y = this.game.h - this.oy - this.h;
+    }
+  }
+
+  render() {
+    let x = this.x;
+    for (let i = 0; i < this.str.length; i += 1) {
+      const ch = this.str[i];
+      const name = `number${ch}`;
+      const { w, h } = this.game.imgMaps[name];
+      this.game.drawImageByName(
+        name,
+        x,
+        this.y,
+        w * this.scale,
+        h * this.scale
+      );
+      x += w * this.scale + this.gap;
+    }
+  }
+}
+
+module.exports = Numbers;
+
+},{"open-game":16}],11:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+class Timer extends Actor {
+  constructor(game, size, x, y, frames, callback) {
+    super(game, size);
+    this.frames = frames; // 实时记录剩余帧数
+    this.total = frames; // 记录初始的帧数，最为100%的参考
+    this.percent = 1;
+    this.red = 0;
+    this.green = 255;
+    this.x = x;
+    this.y = y;
+    this.callback = callback;
+  }
+
+  // stop
+  stop() {
+    this.isStoped = true;
+  }
+
+  // 继续运行计时器
+  run() {
+    this.isStoped = false;
+  }
+
+  // 奖励时间或者惩罚时间，看 frames 参数的正负情况
+  add(frames) {
+    this.frames += frames;
+  }
+
+  update() {
+    if (this.isStoped) return;
+    if (this.frames === 0) {
+      this.stop(); // 这里先要停止计时器，否则callback可能会被多次执行
+      this.callback();
+      return;
+    }
+    if (this.frames < this.total) {
+      this.percent = this.frames / this.total;
+    } else {
+      this.percent = 1;
+    }
+    if (this.percent <= 0.5) {
+      this.green = Math.max(this.percent * 2 * 255, 0);
+      this.red = 255;
+    } else {
+      this.green = 255;
+      this.red = Math.min((1 - this.percent) * 2 * 255, 255);
+    }
+    this.frames -= 1;
+  }
+
+  render() {
+    const { ctx } = this.game;
+    ctx.save();
+    ctx.strokeRect(this.x + 3, this.y, this.w, this.h);
+    ctx.fillStyle = `rgb(${this.red | 0}, ${this.green | 0}, 10)`;
+    ctx.fillRect(
+      this.x + 4 + 3,
+      this.y + 4,
+      (this.w - 8) * this.percent,
+      this.h - 8
+    );
+    ctx.restore();
+  }
+}
+
+module.exports = Timer;
+
+},{"open-game":16}],12:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+class TopBg extends Actor {
+  reset() {
+    const {
+      padding: [, , , left]
+    } = this.game.opts;
+    this.x = left;
+    this.y = left;
+    this.w = this.game.w - left * 2;
+    this.h = (this.w * this.game.imgMaps.topBg0.h) / this.game.imgMaps.topBg0.w;
+  }
+
+  render() {
+    this.game.drawImageByName("topBg0", this.x, this.y, this.w, this.h);
+  }
+}
+
+module.exports = TopBg;
+
+},{"open-game":16}],13:[function(require,module,exports){
 const OpenGame = require("open-game");
 const Start = require("./scenes/start");
 const Map = require("./actors/map");
 const Bg = require("./actors/bg");
+const TopBg = require("./actors/top-bg");
+const Avatar = require("./actors/avatar");
 
 class Game extends OpenGame {
   reset() {
     this.debuggerInfoColor = "#ffffff";
     this.eventListeners = [
-      ["ontouchstart", "onmousedown", "mousedown"],
-      ["ontouchend", "onmouseup", "mouseup"]
+      ["onmousedown", "mousedown"],
+      ["onmouseup", "mouseup"]
     ];
-    this.scores = {
-      record: [],
-      curr: 0,
-      best: 0
-    };
+
+    // 定义游戏区域关键数据
+    const cols = 7;
+    const gap = 3;
+    const top = 230;
+    const left = 3;
+    const blocksize = (this.w - left * 2 - (cols - 1) * gap) / cols; // block 的size，宽等于高
+    const rows = ((this.h - top) / (blocksize + gap)) | 0;
+
     this.opts = {
       blocknum: 5, // block 种类数量
-      rows: 8, // block 行数量
-      cols: 8, // block 列数量
-      top: 200, // 顶部最少偏移量
-      bottom: 50, // 底部最少偏移量, 多余的高度优先留个顶部
-      blocksize: 34, // block 的size，宽等于高
-      gap: 10, // block 之间的缝隙宽度
+      padding: [top, left, left, left], // 内边距, 上、右、下、左，上位最小值，其他为绝对值
+      blocksize,
+      rows,
+      cols,
+      gap,
       prim: 9973 // 辅助随机功能
     };
   }
@@ -629,7 +1034,8 @@ class Game extends OpenGame {
   // 场景特有的角色一般在场景内创建
   createActors() {
     // 游戏角色加载
-    this.actors.bg = new Bg(this, this.imgMaps.bg0);
+    this.actors.bg = new Bg(this);
+    this.actors.topBg = new TopBg(this);
     this.actors.map = new Map(this);
   }
 
@@ -638,22 +1044,39 @@ class Game extends OpenGame {
     // 游戏场景加载
     this.scenes.start = new Start(this, "start");
   }
+
+  // wxUserInit
+  wxUserInit(userInfo) {
+    if (this.platform.env !== "wx") return;
+    this.actors.avatar = new Avatar(this, userInfo.avatarUrl);
+  }
 }
 
 module.exports = Game;
 
-},{"./actors/bg":4,"./actors/map":6,"./scenes/start":8,"open-game":10}],8:[function(require,module,exports){
+},{"./actors/avatar":5,"./actors/bg":6,"./actors/map":9,"./actors/top-bg":12,"./scenes/start":14,"open-game":16}],14:[function(require,module,exports){
 const { Scene } = require("open-game");
 
 class Start extends Scene {
   enter() {
-    this.actors = ["bg", "map"];
+    this.actors = [
+      "bg",
+      "topBg",
+      "map",
+      "score",
+      "timer",
+      "good",
+      "veryGood",
+      "perfect",
+      "beautiful",
+      "replay"
+    ];
   }
 }
 
 module.exports = Start;
 
-},{"open-game":10}],9:[function(require,module,exports){
+},{"open-game":16}],15:[function(require,module,exports){
 /**
  * Actor 类
  * @class
@@ -755,17 +1178,40 @@ class Actor {
 
 module.exports = Actor;
 
-},{}],10:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 (function (process){
 const Actor = require("./actor");
 const Scene = require("./scene");
 
+const isURL = /^https?:\/\//i;
+
+// 微信event映射关系
+const eventsMap = {
+  mobile: {
+    onmousedown: "ontouchstart",
+    onmouseup: "ontouchend",
+    onmousemove: "ontouchmove"
+  },
+  wx: {
+    onmousedown: "onTouchStart",
+    onmouseup: "onTouchEnd",
+    onmousemove: "onTouchMove"
+  }
+};
+
 // 获取执行环境，wx, browser，node
 const env = (() => {
-  if (typeof window === "object") return "browser";
   if (typeof wx === "object") return "wx";
+  if (typeof window === "object") return "browser";
   if (typeof process === "object") return "node";
   throw Error("未知环境");
+})();
+
+// 获取平台类型 pc, mobile, unknown
+const isMobile = (() => {
+  if (env === "node") return "unknown";
+  if (typeof wx !== "undefined") return true;
+  return typeof document !== "undefined" && "ontouchstart" in document;
 })();
 
 /* eslint-disable no-undef */
@@ -774,7 +1220,23 @@ const fetchFns = {
     return Promise.resolve({
       text() {
         return new Promise((success, fail) => {
-          wx.request({ url, success, fail });
+          if (isURL.test(url)) {
+            wx.request({ url, success, fail });
+          } else {
+            try {
+              const fs = wx.getFileSystemManager();
+              const content = fs.readFileSync(url);
+              if (content instanceof ArrayBuffer) {
+                const u8 = new Uint8Array(content);
+                const text = String.fromCharCode(...u8);
+                success(decodeURIComponent(text));
+              } else {
+                success(content);
+              }
+            } catch (e) {
+              fail(e);
+            }
+          }
         });
       }
     });
@@ -796,10 +1258,10 @@ const fetchFns = {
 
 const requestAnimationFrameFns = {
   wx(callback) {
-    return wx.requestAnimationFrame(callback);
+    return requestAnimationFrame(callback);
   },
   browser(callback) {
-    return window.requestAnimationFrame(callback);
+    return requestAnimationFrame(callback);
   },
   node(callback) {
     return setTimeout(callback, 17);
@@ -808,7 +1270,7 @@ const requestAnimationFrameFns = {
 /* eslint-enable no-undef */
 
 const fetch = fetchFns[env];
-const requestAnimationFrame = requestAnimationFrameFns[env];
+const requestAnimationFrameFn = requestAnimationFrameFns[env];
 
 /**
  * Game 类
@@ -826,6 +1288,10 @@ class Game {
   constructor(canvas, Image, width, height, widthRange, heightRange) {
     this.debuggerInfoColor = "#000000";
     this.env = "development"; // 控制游戏是什么模式
+    this.platform = {
+      env,
+      isMobile
+    };
     this.fno = 0; // 程序主帧
     this.isPause = false; // 游戏是否暂停
     this.Image = Image; // 图片构造函数，用来加载资源
@@ -839,6 +1305,7 @@ class Game {
     this.scenes = {}; // 场景管理器
     this.actors = {}; // 角色管理器
     this.callbacks = new Map(); // 帧事件管理器
+    this.wxEvents = {}; // 记录微信event事件函数，因为off的时候需要，否则取消不掉
     if (widthRange) {
       this.w = Math.max(widthRange[0], Math.min(widthRange[1], width));
     } else {
@@ -851,7 +1318,7 @@ class Game {
     }
     this.canvas.width = this.w;
     this.canvas.height = this.h;
-    this.eventListeners = [["ontouchstart", "onclick", "click"]];
+    this.eventListeners = [["onclick", "click"]];
     this.reset();
   }
 
@@ -893,20 +1360,33 @@ class Game {
     const { changedTouches, clientX, clientY } = event;
     const x = (changedTouches && changedTouches[0].clientX) || clientX;
     const y = (changedTouches && changedTouches[0].clientY) || clientY;
-    if (this.scene[fnName]) this.scene[fnName](x, y);
+    if (this.scene.eventHandler) this.scene.eventHandler(fnName, x, y);
   }
 
   // 添加事件监听
-  listenEvent(mobile, pc, fnName) {
-    if (typeof document === "undefined" && typeof wx === "undefined") return;
-    const eventName = mobile in document ? mobile : pc;
+  listenEvent(evt, fnName) {
+    if (env === "node") return;
     const listener = this.eventHandler.bind(this, fnName);
-    this.canvas[eventName] = listener;
+    if (env === "wx") {
+      const wxEvt = eventsMap.wx[evt];
+      wx[wxEvt](listener);
+      this.canvas[wxEvt] = listener;
+    } else {
+      if (isMobile) evt = eventsMap.mobile[evt];
+      this.canvas[evt] = listener;
+    }
   }
 
   // 移除事件监听
-  removeListenEvent(name) {
-    this.canvas[name] = null;
+  removeListenEvent(evt) {
+    if (env === "wx") {
+      const wxEvt = eventsMap.wx[evt];
+      wx[`off${wxEvt.slice(2)}`](this.canvas[wxEvt]);
+      this.canvas[wxEvt] = null;
+    } else {
+      if (isMobile) evt = eventsMap.mobile[evt];
+      this.canvas[evt] = null;
+    }
   }
 
   // 开始游戏，游戏资源全部加载完毕后
@@ -929,11 +1409,11 @@ class Game {
     this.draw = this.draw.bind(this);
 
     // 游戏主循环启动
-    requestAnimationFrame(this.draw);
+    requestAnimationFrameFn(this.draw);
   }
 
   draw() {
-    requestAnimationFrame(this.draw);
+    requestAnimationFrameFn(this.draw);
     if (this.isPause) return;
     this.fno += 1;
     // 擦除
@@ -985,6 +1465,22 @@ class Game {
   }
 
   /**
+   * 输出错误信息, 在开发模式下
+   * @param {string} msg 错误信息
+   *
+   * @return {void}
+   */
+  showMessage(msg) {
+    this.ctx.save();
+    this.ctx.fillStyle = "#ffffff";
+    this.ctx.fillRect(0, this.h - 40, this.w, 40);
+    this.ctx.fillStyle = "orange";
+    this.ctx.font = "20px 宋体";
+    this.ctx.fillText(msg, 0, this.h - 20);
+    this.ctx.restore();
+  }
+
+  /**
    * 显示资源加载 loading 效果
    * @param {Array.URL} resources 游戏所需静态资源url列表
    *
@@ -993,12 +1489,16 @@ class Game {
   progress(percent) {
     const { ctx } = this;
     ctx.save();
-    ctx.clearRect(0, 0, this.w, this.h);
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, this.w, this.h);
     ctx.strokeStyle = "rgba(255, 55, 20, 1)";
     ctx.lineWidth = 4;
     ctx.strokeRect(30, 150, this.w - 60, 20);
     ctx.fillStyle = "rgba(30, 255, 10, 1)";
     ctx.fillRect(34, 154, Math.max(10, ((this.w - 68) * percent) / 100), 12);
+    ctx.textAlign = "center";
+    ctx.font = "15px Arial";
+    ctx.fillText(`The resources loading... ${percent} %`, this.w / 2, 192);
     this.ctx.restore();
   }
 
@@ -1019,7 +1519,7 @@ class Game {
     let count = 0; // 记录已完成的数量
     this.progress(0); // 显示 loading 效果
     return new Promise((resolve, reject) => {
-      for (const { name, type, url, map } of resources) {
+      for (const { name, type, url, map, scale } of resources) {
         // TODO 暂时只支持图片类型的预加载
         if (type !== "image") continue;
         const img = new this.Image();
@@ -1037,14 +1537,31 @@ class Game {
               .catch(reject);
           } else {
             count += 1;
-            const { width: w, height: h } = img;
+            let { width: w, height: h } = img;
+            if (scale) {
+              w *= scale;
+              h *= scale;
+            }
             this.progress(((count * 100) / length) | 0);
             this.imgMaps[name] = { x: 0, y: 0, w, h };
-            this.drawImgs[name] = [img, 0, 0, w, h, 0, 0, w, h];
+            this.drawImgs[name] = [
+              img,
+              0,
+              0,
+              img.width,
+              img.height,
+              0,
+              0,
+              w,
+              h
+            ];
             if (count === length) resolve();
           }
         };
-        img.onerror = reject;
+        img.onerror = e => {
+          console.error(e);
+          reject(e);
+        };
         img.src = url;
       }
     });
@@ -1057,11 +1574,13 @@ class Game {
    *
    * @return {void}
    */
-  drawImageAlignCenterByName(name, y) {
+  drawImageAlignCenterByName(name, y, w, h) {
     const args = this.drawImgs[name];
     if (!args) throw Error("图片不存在");
-    args[5] = (this.w - args[3]) >> 1;
+    args[5] = (this.w - args[7]) >> 1;
     args[6] = y;
+    if (w) args[7] = w;
+    if (h) args[8] = h;
     this.ctx.drawImage(...args);
   }
 
@@ -1091,11 +1610,13 @@ class Game {
    *
    * @return {void}
    */
-  drawImageByName(name, x, y) {
+  drawImageByName(name, x, y, w, h) {
     const args = this.drawImgs[name];
     if (!args) throw Error("图片不存在");
     args[5] = x;
     args[6] = y;
+    if (w) args[7] = w;
+    if (h) args[8] = h;
     this.ctx.drawImage(...args);
   }
 
@@ -1120,7 +1641,7 @@ Game.Scene = Scene;
 module.exports = Game;
 
 }).call(this,require('_process'))
-},{"./actor":9,"./scene":11,"_process":3,"fs":2}],11:[function(require,module,exports){
+},{"./actor":15,"./scene":17,"_process":4,"fs":3}],17:[function(require,module,exports){
 /**
  * Scene 类
  * @class
@@ -1181,54 +1702,24 @@ class Scene {
   }
 
   /**
-   * 鼠标按下事件
+   * 鼠标事件执行分发
+   * eventHandler
+   *
+   * @param {string} name 事件名称
+   * @param {Number} x 鼠标x坐标值
+   * @param {Number} y 鼠标y坐标值
    *
    * @return {void}
    */
-  mousedown(x, y) {
+  eventHandler(name, x, y) {
     for (const key of this.actors) {
       const actor = this.game.actors[key];
-      if (actor.mousedown) actor.mousedown(x, y);
-    }
-  }
-
-  /**
-   * 鼠标松开事件
-   *
-   * @return {void}
-   */
-  mouseup(x, y) {
-    for (const key of this.actors) {
-      const actor = this.game.actors[key];
-      if (actor.mouseup) actor.mouseup(x, y);
-    }
-  }
-
-  /**
-   * 鼠标移动事件
-   *
-   * @return {void}
-   */
-  mousemove(x, y) {
-    for (const key of this.actors) {
-      const actor = this.game.actors[key];
-      if (actor.mousemove) actor.mousemove(x, y);
-    }
-  }
-
-  /**
-   * 鼠标点击事件
-   *
-   * @return {void}
-   */
-  click(x, y) {
-    for (const key of this.actors) {
-      const actor = this.game.actors[key];
-      if (actor.click) actor.click(x, y);
+      if (!actor) continue;
+      if (actor[name]) actor[name](x, y);
     }
   }
 }
 
 module.exports = Scene;
 
-},{}]},{},[1]);
+},{}]},{},[2]);

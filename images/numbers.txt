@@ -1,0 +1,10 @@
+number1 0 0 30 51
+number2 31 0 30 51
+number3 72 0 30 51
+number4 111 0 34 51
+number5 155 0 30 51
+number6 195 0 33 51
+number7 236 0 32 51
+number8 277 0 33 51
+number9 319 0 33 51
+number0 360 0 33 51
