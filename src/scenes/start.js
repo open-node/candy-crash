@@ -12,7 +12,11 @@ class Start extends Scene {
       "veryGood",
       "perfect",
       "beautiful",
-      "replay"
+      "replay",
+      "bombCard",
+      "magicCard",
+      "malletCard",
+      "resetCard"
     ];
   }
 }

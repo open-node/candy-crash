@@ -35,8 +35,13 @@ const resources = [
   },
   { name: "goal1000", type: "image", url: "images/goal1000.png", scale: 0.5 },
   { name: "good", type: "image", url: "images/good.png", scale: 0.5 },
-  { name: "hit", type: "image", url: "images/hit.png", scale: 0.5 },
-  { name: "hitActive", type: "image", url: "images/hitActive.png", scale: 0.5 },
+  { name: "mallet", type: "image", url: "images/mallet.png", scale: 0.5 },
+  {
+    name: "malletActive",
+    type: "image",
+    url: "images/malletActive.png",
+    scale: 0.5
+  },
   { name: "iconBack", type: "image", url: "images/iconBack.png", scale: 0.5 },
   { name: "magic", type: "image", url: "images/magic.png", scale: 0.5 },
   { name: "perfect", type: "image", url: "images/perfect.png", scale: 0.5 },

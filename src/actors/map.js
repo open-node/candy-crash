@@ -2,6 +2,7 @@ const { Actor } = require("open-game");
 const Block = require("./block");
 const Timer = require("./timer");
 const ImageEffect = require("./image-effect");
+const ToolCard = require("./tool-card");
 const Numbers = require("./numbers");
 
 class Map extends Actor {
@@ -16,6 +17,10 @@ class Map extends Actor {
       gap,
       padding: [top, , bottom, left]
     } = game.opts;
+
+    this.tools = ["bomb", "magic", "reset", "mallet"];
+
+    const { topBg } = game.actors;
 
     this.rows = rows;
     this.cols = cols;
@@ -52,7 +57,8 @@ class Map extends Actor {
     // 3. falling 下落状态, 消除后有些空隙，下落对齐
     // 4. suppling 补充状态, 消除之后，对齐之后，需要补充新的 block 进来
     // 5. end 游戏结束状态
-    // 6. animation 动画状态, 各种补间动画状态
+    // 6. usingTool 使用道具状态
+    // 7. animation 动画状态, 各种补间动画状态
     this.fsm = "suppling"; // 初始状态补充blocks
 
     // 初始化定时器
@@ -64,12 +70,17 @@ class Map extends Actor {
       7200, // 7200 帧
       () => {
         this.fsm = "end";
+        if (this.currActived) this.cancelActived();
+        if (this.currTool) {
+          this.currTool.cancelActived();
+          this.currTool = null;
+        }
         this.game.actors.replay.show();
       }
     );
 
     // 积分系统
-    const scoreY = (game.actors.topBg.h >> 1) - 35;
+    const scoreY = (topBg.h >> 1) - 35;
     game.actors.score = new Numbers(game, 0.5, 0, 0, scoreY, 5, "center");
 
     // 赞美系列
@@ -93,6 +104,17 @@ class Map extends Actor {
         game.registCallback(36, this.reset.bind(this));
       }
     );
+
+    // 道具卡片
+    let toolX = 110;
+    const toolW = game.imgMaps.bomb.w;
+    const toolGap = (game.w - toolX - 16 - toolW * 4) / 3;
+    // 道具卡下边缘距离 topBg 的下边缘 40 像素
+    const toolY = topBg.y + topBg.h - toolW - 40;
+    for (const tool of this.tools) {
+      game.actors[`${tool}Card`] = new ToolCard(game, tool, 1, toolX, toolY);
+      toolX += toolW + toolGap;
+    }
   }
 
   calcPraise(score) {
@@ -134,17 +156,43 @@ class Map extends Actor {
   }
 
   mousedown(x, y) {
-    // 只有静稳状态才可以操作
-    if (this.fsm !== "stable") return;
+    // 只有静稳状态和道具使用状态才可以操作
+    if (this.fsm !== "stable" && this.fsm !== "usingTool") return;
     if (this.currActived) this.cancelActived();
 
-    if (!this.isItOn(x, y)) return;
+    if (this.currTool) this.currTool.cancelActived();
+    for (const name of this.tools) {
+      const tool = this.game.actors[`${name}Card`];
+      if (tool.requestActived(x, y)) {
+        // 点击的这个和上一个不同
+        if (this.currTool !== tool) {
+          this.currTool = tool;
+          this.fsm = "usingTool";
+          // 按下的时候同时开始监听移动，道具卡跟随鼠标
+          this.game.listenEvent("onmousemove", "mousemove");
+        } else {
+          tool.cancelActived();
+          this.currTool = null;
+          this.fsm = "stable";
+        }
+        return;
+      }
+    }
+
     // 按下的时候同时开始监听移动，这就是拖拽效果
-    this.game.listenEvent("onmousemove", "mousemove");
+    if (this.fsm === "stable")
+      this.game.listenEvent("onmousemove", "mousemove");
+
+    if (!this.isItOn(x, y)) return;
 
     // 根据 x, y 来计算应该是哪个 block 被点击，这样比挨个尝试速度快很多
-    this.currActived = this.which(x, y);
-    this.blocks[this.currActived[0]][this.currActived[1]].actived = true;
+    const currActived = this.which(x, y);
+    if (this.fsm === "usingTool") {
+      this.fsm = this.currTool.use(this.blocks, ...currActived);
+    } else {
+      this.currActived = currActived;
+      this.blocks[this.currActived[0]][this.currActived[1]].actived = true;
+    }
   }
 
   mouseup() {
@@ -156,23 +204,29 @@ class Map extends Actor {
   }
 
   mousemove(x, y) {
-    if (this.currActived && this.isItOn(x, y)) {
-      const [r, c] = this.currActived;
-      const [i, j] = this.which(x, y);
-      if (
-        // 要交换的二者不一样，一样交换没有意义
-        this.blocks[r][c].code !== this.blocks[i][j].code &&
-        // 上下判断，列号相同，行号相差一
-        ((c === j && Math.abs(r - i) === 1) ||
-          // 左右判断判断, 行号相同，列号差一
-          (r === i && Math.abs(c - j) === 1))
-      ) {
-        this.swap(r, c, i, j);
-        // 移除移动事件监听
-        this.cancelActived();
-        // 松开的时候移动移动事件监听
-        this.game.removeListenEvent("onmousemove");
+    if (this.fsm === "stable") {
+      if (this.currActived && this.isItOn(x, y)) {
+        const [r, c] = this.currActived;
+        const [i, j] = this.which(x, y);
+        if (
+          // 要交换的二者不一样，一样交换没有意义
+          this.blocks[r][c].code !== this.blocks[i][j].code &&
+          // 上下判断，列号相同，行号相差一
+          ((c === j && Math.abs(r - i) === 1) ||
+            // 左右判断判断, 行号相同，列号差一
+            (r === i && Math.abs(c - j) === 1))
+        ) {
+          this.swap(r, c, i, j);
+          // 移除移动事件监听
+          this.cancelActived();
+          // 松开的时候移动移动事件监听
+          this.game.removeListenEvent("onmousemove");
+        }
       }
+    }
+
+    if (this.fsm === "usingTool") {
+      this.currTool.setMouseXY(x, y);
     }
   }
 
@@ -355,6 +409,18 @@ class Map extends Actor {
         block.render();
       }
     }
+    if (this.fsm === "end") {
+      this.game.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+      const padding = this.game.opts.padding[3];
+      this.game.ctx.fillRect(
+        this.x - padding,
+        this.y - padding,
+        this.w + padding * 2,
+        this.h + padding * 2
+      );
+    }
+
+    this.game.ctx.fillText(`FSM: ${this.fsm}`, 5, 60);
   }
 }
 
