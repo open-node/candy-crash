@@ -2,7 +2,7 @@ const { Actor } = require("open-game");
 const Block = require("./block");
 const Timer = require("./timer");
 const ImageEffect = require("./image-effect");
-const ToolCard = require("./tool-card");
+const Tools = require("./tools");
 const Numbers = require("./numbers");
 
 class Map extends Actor {
@@ -17,8 +17,6 @@ class Map extends Actor {
       gap,
       padding: [top, , bottom, left]
     } = game.opts;
-
-    this.tools = ["bomb", "magic", "reset", "mallet"];
 
     const { topBg } = game.actors;
 
@@ -47,19 +45,7 @@ class Map extends Actor {
     this.my = 0;
 
     // 记录当前地图中block的情况
-    this.blocks = [];
-    for (let i = 0; i < rows; i += 1) this.blocks[i] = Array(cols);
-
-    // 记录当前状态机状态
-    // 利用有限状态机来管理各种状态
-    // 1. stable 静稳状态, 等待用户操作
-    // 2. removing 判断并消除状态
-    // 3. falling 下落状态, 消除后有些空隙，下落对齐
-    // 4. suppling 补充状态, 消除之后，对齐之后，需要补充新的 block 进来
-    // 5. end 游戏结束状态
-    // 6. usingTool 使用道具状态
-    // 7. animation 动画状态, 各种补间动画状态
-    this.fsm = "suppling"; // 初始状态补充blocks
+    this.blocksReset();
 
     // 初始化定时器
     game.actors.timer = new Timer(
@@ -70,11 +56,8 @@ class Map extends Actor {
       7200, // 7200 帧
       () => {
         this.fsm = "end";
-        if (this.currActived) this.cancelActived();
-        if (this.currTool) {
-          this.currTool.cancelActived();
-          this.currTool = null;
-        }
+        this.cancelActivedBlock();
+        this.cancelActivedTool();
         this.game.actors.replay.show();
       }
     );
@@ -111,10 +94,26 @@ class Map extends Actor {
     const toolGap = (game.w - toolX - 16 - toolW * 4) / 3;
     // 道具卡下边缘距离 topBg 的下边缘 40 像素
     const toolY = topBg.y + topBg.h - toolW - 40;
-    for (const tool of this.tools) {
-      game.actors[`${tool}Card`] = new ToolCard(game, tool, 1, toolX, toolY);
+    for (const [name, Tool] of Tools) {
+      game.actors[`${name}Card`] = new Tool(game, 1, toolX, toolY);
       toolX += toolW + toolGap;
     }
+  }
+
+  blocksReset() {
+    this.blocks = [];
+    for (let i = 0; i < this.rows; i += 1) this.blocks[i] = Array(this.cols);
+
+    // 记录当前状态机状态
+    // 利用有限状态机来管理各种状态
+    // 1. stable 静稳状态, 等待用户操作
+    // 2. removing 判断并消除状态
+    // 3. falling 下落状态, 消除后有些空隙，下落对齐
+    // 4. suppling 补充状态, 消除之后，对齐之后，需要补充新的 block 进来
+    // 5. end 游戏结束状态
+    // 6. usingTool 使用道具状态
+    // 7. animation 动画状态, 各种补间动画状态
+    this.fsm = "suppling"; // 初始状态补充blocks
   }
 
   calcPraise(score) {
@@ -148,58 +147,80 @@ class Map extends Actor {
     ];
   }
 
-  // 取消激活
-  cancelActived() {
+  // 取消激活的块
+  cancelActivedBlock() {
+    if (!this.currActived) return;
     const [c, r] = this.currActived;
     this.blocks[c][r].actived = false;
     this.currActived = null;
   }
 
+  // 取消激活的工具
+  cancelActivedTool() {
+    if (!this.currTool) return;
+    this.currTool.cancelActived();
+    this.currTool = null;
+  }
+
   mousedown(x, y) {
     // 只有静稳状态和道具使用状态才可以操作
     if (this.fsm !== "stable" && this.fsm !== "usingTool") return;
-    if (this.currActived) this.cancelActived();
+    this.cancelActivedBlock();
 
-    if (this.currTool) this.currTool.cancelActived();
-    for (const name of this.tools) {
+    this.cancelActivedTool();
+    for (const [name] of Tools) {
       const tool = this.game.actors[`${name}Card`];
       if (tool.requestActived(x, y)) {
         // 点击的这个和上一个不同
         if (this.currTool !== tool) {
           this.currTool = tool;
           this.fsm = "usingTool";
-          // 按下的时候同时开始监听移动，道具卡跟随鼠标
-          this.game.listenEvent("onmousemove", "mousemove");
+          // 执行选中函数，如果返回true，则继续监听移动事件
+          // 说明道具不是选中就直接使用了。需要继续在map上移动
+          // 选择待作用的 block
+          if (this.currTool.selected(this)) {
+            // 按下的时候同时开始监听移动，道具卡跟随鼠标
+            this.game.listenEvent("onmousemove", "mousemove");
+          } else {
+            // 选中直接开始使用
+            this.currTool.use(this);
+            this.cancelActivedTool();
+          }
         } else {
-          tool.cancelActived();
-          this.currTool = null;
+          tool.cancelActivedTool();
           this.fsm = "stable";
         }
         return;
       }
     }
 
+    if (this.fsm !== "stable") return;
     // 按下的时候同时开始监听移动，这就是拖拽效果
-    if (this.fsm === "stable")
-      this.game.listenEvent("onmousemove", "mousemove");
+    this.game.listenEvent("onmousemove", "mousemove");
 
     if (!this.isItOn(x, y)) return;
 
     // 根据 x, y 来计算应该是哪个 block 被点击，这样比挨个尝试速度快很多
-    const currActived = this.which(x, y);
-    if (this.fsm === "usingTool") {
-      this.fsm = this.currTool.use(this.blocks, ...currActived);
-    } else {
-      this.currActived = currActived;
-      this.blocks[this.currActived[0]][this.currActived[1]].actived = true;
-    }
+    this.currActived = this.which(x, y);
+    this.blocks[this.currActived[0]][this.currActived[1]].actived = true;
   }
 
-  mouseup() {
-    if (this.currActived) {
-      this.cancelActived();
+  mouseup(x, y) {
+    if (this.fsm === "stable") {
+      this.cancelActivedBlock();
       // 松开的时候移动移动事件监听
       this.game.removeListenEvent("onmousemove");
+    }
+
+    if (this.fsm === "usingTool") {
+      if (!this.isItOn(x, y)) {
+        this.cancelActivedTool();
+      } else {
+        // 使用道具
+        this.currActived = this.which(x, y);
+        this.currTool.use(this);
+        this.cancelActivedTool();
+      }
     }
   }
 
@@ -218,7 +239,7 @@ class Map extends Actor {
         ) {
           this.swap(r, c, i, j);
           // 移除移动事件监听
-          this.cancelActived();
+          this.cancelActivedBlock();
           // 松开的时候移动移动事件监听
           this.game.removeListenEvent("onmousemove");
         }

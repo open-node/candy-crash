@@ -1,23 +1,10 @@
 const { Actor } = require("open-game");
 
-const titles = {
-  bomb: "炸弹",
-  mallet: "小木槌",
-  magic: "魔法棒",
-  reset: "重置"
-};
-
-class ToolCard extends Actor {
-  constructor(game, name, count, x, y) {
-    super(game, game.imgMaps[name]);
-    this.title = titles[name]; // 标题
-    this.name = name; // 道具卡名称，以此来找到对应图片
-    this.count = count; // 道具卡次数, 以此来判断是否可以使用
+class Tool extends Actor {
+  reset() {
     this.actived = false; // 是否处于激活状态
     this.alpha = 1; // 选中后的效果
     this.da = 0.03; // 透明度变化量
-    this.x = x;
-    this.y = y;
     this.mx = 0;
     this.my = 0;
   }
@@ -37,6 +24,16 @@ class ToolCard extends Actor {
   cancelActived() {
     if (!this.actived) return;
     this.actived = false;
+  }
+
+  // 选中执行的函数
+  selected() {
+    return true;
+  }
+
+  // 使用执行的函数
+  use() {
+    this.count -= 1;
   }
 
   update() {
@@ -72,4 +69,4 @@ class ToolCard extends Actor {
   }
 }
 
-module.exports = ToolCard;
+module.exports = Tool;
