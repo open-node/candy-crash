@@ -431,6 +431,7 @@ class Map extends Actor {
       }
     }
     if (this.fsm === "end") {
+      // replay 按钮的黑色半透明背景，提高对比度、识别度
       this.game.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
       const padding = this.game.opts.padding[3];
       this.game.ctx.fillRect(
@@ -440,8 +441,6 @@ class Map extends Actor {
         this.h + padding * 2
       );
     }
-
-    this.game.ctx.fillText(`FSM: ${this.fsm}`, 5, 60);
   }
 }
 
