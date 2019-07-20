@@ -290,7 +290,7 @@ const { Actor } = require("open-game");
 class Block extends Actor {
   constructor(game, code, x, y) {
     super(game, { w: game.opts.blocksize, h: game.opts.blocksize });
-    this.code = code;
+    this.code = +code;
 
     // 是否被点击选中
     this.actived = false;
@@ -728,7 +728,7 @@ class Map extends Actor {
     }
 
     if (this.fsm === "usingTool") {
-      this.currTool.setMouseXY(x, y);
+      this.currTool.setMouseXY(x, y, this);
     }
   }
 
@@ -1199,6 +1199,50 @@ class Magic extends Base {
     this.count = count;
     this.x = x;
     this.y = y;
+    this.currRow = null;
+    this.currCol = null;
+    this.currCode = null;
+    this.sure = false;
+  }
+
+  setMouseXY(x, y, map) {
+    if (!map.isItOn(x, y)) {
+      if (this.block) this.restore();
+      return;
+    }
+    this.mx = x;
+    this.my = y;
+    const [r, c] = map.which(x, y);
+    if (!this.block) {
+      this.save(r, c, map);
+    } else if (this.block !== map.blocks[r][c]) {
+      this.restore();
+      this.save(r, c, map);
+    }
+  }
+
+  save(r, c, map) {
+    this.block = map.blocks[r][c];
+    this.currCode = this.block.code;
+    this.map = map;
+  }
+
+  restore() {
+    this.block.code = this.currCode;
+    this.block = null;
+  }
+
+  use(map) {
+    this.sure = true;
+    this.block = null;
+    this.count -= 1;
+    map.fsm = "removing";
+  }
+
+  update() {
+    if (!this.block) return;
+    if (this.game.fno % 60 === 1)
+      this.block.code = 1 + ((this.block.code + 1) % this.map.blocknum);
   }
 }
 

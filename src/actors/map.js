@@ -247,7 +247,7 @@ class Map extends Actor {
     }
 
     if (this.fsm === "usingTool") {
-      this.currTool.setMouseXY(x, y);
+      this.currTool.setMouseXY(x, y, this);
     }
   }
 

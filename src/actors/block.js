@@ -3,7 +3,7 @@ const { Actor } = require("open-game");
 class Block extends Actor {
   constructor(game, code, x, y) {
     super(game, { w: game.opts.blocksize, h: game.opts.blocksize });
-    this.code = code;
+    this.code = +code;
 
     // 是否被点击选中
     this.actived = false;
