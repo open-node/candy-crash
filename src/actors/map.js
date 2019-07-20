@@ -43,14 +43,7 @@ class Map extends Actor {
 
     // 记录当前地图中block的情况
     this.blocks = [];
-    for (let i = 0; i < rows; i += 1) {
-      this.blocks[i] = [];
-      for (let j = 0; j < cols; j += 1) {
-        // 编号从1开始
-        const code = this.random();
-        this.blocks[i][j] = new Block(game, code, ...this.where(i, j));
-      }
-    }
+    for (let i = 0; i < rows; i += 1) this.blocks[i] = Array(cols);
 
     // 记录当前状态机状态
     // 利用有限状态机来管理各种状态
@@ -60,7 +53,7 @@ class Map extends Actor {
     // 4. suppling 补充状态, 消除之后，对齐之后，需要补充新的 block 进来
     // 5. end 游戏结束状态
     // 6. animation 动画状态, 各种补间动画状态
-    this.fsm = "removing"; // 初始就是判断消除状态
+    this.fsm = "suppling"; // 初始状态补充blocks
 
     // 初始化定时器
     game.actors.timer = new Timer(
@@ -68,7 +61,7 @@ class Map extends Actor {
       { w: this.w - this.x * 2, h: 20 },
       this.x,
       this.y - 35,
-      600, // 7200 帧
+      7200, // 7200 帧
       () => {
         this.fsm = "end";
         this.game.actors.replay.show();
