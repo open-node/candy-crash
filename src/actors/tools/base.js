@@ -45,29 +45,41 @@ class Tool extends Actor {
   }
 
   render() {
-    this.game.ctx.save();
-    this.game.ctx.transform(1, 0, 0, 1, this.x, this.y);
+    const { ctx } = this.game;
+    ctx.save();
+    ctx.transform(1, 0, 0, 1, this.x, this.y);
     if (this.actived) {
       // 绘制选中效果
-      this.game.ctx.fillStyle = `rgba(255, 255, 10, ${this.alpha})`;
-      this.game.ctx.fillRect(-4, -4, this.w + 8, this.h + 8);
+      ctx.fillStyle = `rgba(255, 255, 10, ${this.alpha})`;
+      ctx.fillRect(-4, -4, this.w + 8, this.h + 8);
     }
     this.game.drawImageByName(this.name, 0, 0);
-    this.game.ctx.fillStyle = "#ffffff";
-    this.game.ctx.font = "12px 微软雅黑";
-    this.game.ctx.textAlign = "center";
-    this.game.ctx.fillText(this.title, this.w / 2, this.h + 16);
-    this.game.ctx.restore();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px 微软雅黑";
+    ctx.textAlign = "center";
+    ctx.fillText(this.title, this.w / 2, this.h + 16);
+    ctx.restore();
+
+    // 绘制数量提示, 右上角
+    ctx.beginPath();
+    ctx.arc(this.x + this.w - 3, this.y + 3, 10, 0, Math.PI * 2, true);
+    ctx.fillStyle = "rgba(255, 30, 30, 0.8)";
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px 微软雅黑";
+    ctx.textAlign = "center";
+    ctx.fillText(this.count, this.x + this.w - 3, this.y + 8);
 
     if (this.actived) {
-      this.game.ctx.save();
-      this.game.ctx.globalAlpha = 0.5;
+      ctx.save();
+      ctx.globalAlpha = 0.5;
       this.game.drawImageByName(
         this.name,
         this.mx - this.w / 2,
         this.my - this.h / 2
       );
-      this.game.ctx.restore();
+      ctx.restore();
     }
   }
 }
