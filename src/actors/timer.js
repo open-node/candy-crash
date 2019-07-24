@@ -13,6 +13,11 @@ class Timer extends Actor {
     this.callback = callback;
   }
 
+  start(frames) {
+    this.frames = frames;
+    this.run();
+  }
+
   // stop
   stop() {
     this.isStoped = true;

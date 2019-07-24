@@ -1,5 +1,8 @@
 const resources = [
   { name: "replay", type: "image", url: "images/replay.png" },
+  { name: "levelBg", type: "image", url: "images/levelBg.png", scale: 0.5 },
+  { name: "lock", type: "image", url: "images/lock.png", scale: 0.3 },
+  { name: "unlock", type: "image", url: "images/unlock.png", scale: 0.3 },
   {
     name: "numbers",
     type: "image",

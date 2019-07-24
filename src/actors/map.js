@@ -4,8 +4,16 @@ const Timer = require("./timer");
 const ImageEffect = require("./image-effect");
 const Tools = require("./tools");
 const Numbers = require("./numbers");
+const Level = require("./level");
 
 class Map extends Actor {
+  // 开始游戏
+  start(level = 0) {
+    this.game.actors.level.setValue(level);
+    this.game.actors.timer.start(this.game.actors.level.value.timer * 60);
+    this.game.actors.score.setValue(0);
+  }
+
   reset() {
     const { game } = this;
     const {
@@ -40,6 +48,14 @@ class Map extends Actor {
     this.h = game.h - this.y - bottom;
     if (this.y < top) throw Error("画布太小无法展示");
 
+    // 关卡选择
+    game.actors.level = new Level(this.game, this.game.imgMaps.levelBg);
+    game.actors.level.setValue(0);
+
+    // 积分系统
+    const scoreY = (topBg.h >> 1) - 35;
+    game.actors.score = new Numbers(game, 0.5, 0, 0, scoreY, 5, "center");
+
     // 记录鼠标移动的位置
     this.mx = 0;
     this.my = 0;
@@ -62,10 +78,6 @@ class Map extends Actor {
       }
     );
 
-    // 积分系统
-    const scoreY = (topBg.h >> 1) - 35;
-    game.actors.score = new Numbers(game, 0.5, 0, 0, scoreY, 5, "center");
-
     // 赞美系列
     game.actors.good = new ImageEffect(game, "good", "center", "gold");
     game.actors.veryGood = new ImageEffect(game, "veryGood", "center", "gold");
@@ -84,7 +96,7 @@ class Map extends Actor {
       "gold",
       () => {
         game.actors.replay.hide(36);
-        game.registCallback(36, this.reset.bind(this));
+        game.registCallback(36, this.start.bind(this));
       }
     );
 
