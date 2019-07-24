@@ -15,7 +15,7 @@ class Numbers extends Actor {
   }
 
   setValue(value) {
-    this.value = value;
+    this.add(value - this.value);
   }
 
   add(value) {

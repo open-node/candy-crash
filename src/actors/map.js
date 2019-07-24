@@ -16,6 +16,7 @@ class Map extends Actor {
     }
     this.levelComplated = false;
     this.game.setCurrLevel(level);
+    this.game.actors.level.currActived = level;
     this.game.actors.level.setValue(level);
     this.game.actors.timer.start(this.game.actors.level.value.time * 60);
     this.game.actors.score.setValue(0);
@@ -85,8 +86,6 @@ class Map extends Actor {
         if (game.actors.level.isAchieved(game.actors.score.value)) {
           game.setCurrRecord(game.actors.score.value);
           this.levelComplated = true;
-          game.actors.congrantSmall.show();
-          game.actors.congrantSmall.hide(60);
           game.registCallback(60, () => game.actors.replay.show());
         } else {
           game.actors.replay.show();
@@ -97,8 +96,11 @@ class Map extends Actor {
     game.actors.congrantSmall = new ImageEffect(
       game,
       "congrantSmall",
-      "center",
-      "gold"
+      "right",
+      "top",
+      null,
+      30,
+      50
     );
     game.actors.congrantLarge = new ImageEffect(
       game,
@@ -409,6 +411,9 @@ class Map extends Actor {
         // 如果有消除掉块，则加分
         const score = this.calcScore(this.removedBlocks);
         this.game.actors.score.add(score);
+        if (this.game.actors.level.isAchieved(this.game.actors.score.value)) {
+          this.game.actors.congrantSmall.show();
+        }
         // 分数已经加完，重置计数器
         this.removedBlocks = 0;
 

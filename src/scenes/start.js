@@ -18,6 +18,8 @@ class Start extends Scene {
       "magicCard",
       "malletCard",
       "resetCard",
+      "congrantSmall",
+      "congrantLarge",
       "level"
     ];
   }
