@@ -10,7 +10,7 @@ class Levels extends Actor {
     this.x = this.padding;
     this.y = topBg.y + topBg.h + this.padding;
 
-    const records = this.game.getStorageSync("records");
+    const records = this.game.getRecords();
     const cols = 3;
     const w = 100;
     const h = 100;
@@ -26,15 +26,18 @@ class Levels extends Actor {
       }
       return item;
     });
-    this.currActived = this.items[0];
-    this.currActived.actived = true;
+    this.currActived = this.game.getCurrLevel();
+    this.items[this.currActived].actived = true;
   }
 
   mousedown(x, y) {
-    for (const item of this.items) {
+    for (let i = 0; i < config.length; i += 1) {
+      const item = this.items[i];
       if (item.mousedown(x, y)) {
-        if (this.currActived) this.currActived.actived = false;
-        this.currActived = item;
+        this.items[this.currActived].actived = false;
+        this.currActived = i;
+        this.items[this.currActived].actived = true;
+        break;
       }
     }
   }
@@ -43,5 +46,7 @@ class Levels extends Actor {
     for (const item of this.items) item.render();
   }
 }
+
+Levels.config = config;
 
 module.exports = Levels;

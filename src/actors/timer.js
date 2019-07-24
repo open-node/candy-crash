@@ -1,10 +1,9 @@
 const { Actor } = require("open-game");
 
 class Timer extends Actor {
-  constructor(game, size, x, y, frames, callback) {
+  constructor(game, size, x, y, callback) {
     super(game, size);
-    this.frames = frames; // 实时记录剩余帧数
-    this.total = frames; // 记录初始的帧数，最为100%的参考
+    this.isStoped = true;
     this.percent = 1;
     this.red = 0;
     this.green = 255;
@@ -15,6 +14,7 @@ class Timer extends Actor {
 
   start(frames) {
     this.frames = frames;
+    this.total = frames; // 记录初始的帧数，最为100%的参考
     this.run();
   }
 

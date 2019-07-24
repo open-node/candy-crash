@@ -24,10 +24,9 @@ class Start extends Scene {
 
   enter() {
     const { currActived } = this.game.actors.levels;
-    if (!currActived) return;
-    if (currActived.value === this.game.actors.level.value) return;
+    if (currActived === this.game.getCurrLevel()) return;
     // 如果选择了不一样的关卡，则重新开始游戏
-    this.game.actors.map.reset();
+    this.game.actors.map.start(currActived);
   }
 }
 

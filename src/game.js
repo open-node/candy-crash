@@ -35,8 +35,38 @@ class Game extends OpenGame {
     };
   }
 
+  nextLevel() {
+    const curr = this.getCurrLevel();
+    return Math.min(Levels.config.length - 1, curr + 1);
+  }
+
+  getCurrLevel() {
+    const value = Math.max(0, wx.getStorageSync("currLevel") | 0);
+    return Math.min(Levels.config.length - 1, value);
+  }
+
+  setCurrLevel(value) {
+    const level = Math.min(Levels.config.length - 1, Math.max(0, value | 0));
+    wx.setStorageSync("currLevel", level);
+  }
+
   getStorageSync(key) {
     return wx.getStorageSync(key);
+  }
+
+  setStorageSync(key, data) {
+    return wx.setStorageSync(key, data);
+  }
+
+  getRecords() {
+    return wx.getStorageSync("records") || [];
+  }
+
+  setCurrRecord(score) {
+    const records = this.getRecords();
+    const level = this.getCurrLevel();
+    if (!records[level] || records[level] < score) records[level] = score;
+    this.setStorageSync("records", records);
   }
 
   // 创建角色, 并非游戏全部角色

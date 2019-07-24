@@ -8,9 +8,12 @@ const Level = require("./level");
 
 class Map extends Actor {
   // 开始游戏
-  start(level = 0) {
+  start(level) {
+    if (level == null && this.levelComplated) level = this.game.nextLevel();
+    this.levelComplated = false;
+    this.game.setCurrLevel(level);
     this.game.actors.level.setValue(level);
-    this.game.actors.timer.start(this.game.actors.level.value.timer * 60);
+    this.game.actors.timer.start(this.game.actors.level.value.time * 60);
     this.game.actors.score.setValue(0);
   }
 
@@ -25,6 +28,8 @@ class Map extends Actor {
       gap,
       padding: [top, , bottom, left]
     } = game.opts;
+
+    this.levelComplated = false; // 关卡是否完成
 
     const { topBg } = game.actors;
 
@@ -50,7 +55,7 @@ class Map extends Actor {
 
     // 关卡选择
     game.actors.level = new Level(this.game, this.game.imgMaps.levelBg);
-    game.actors.level.setValue(0);
+    game.actors.level.setValue(this.game.getCurrLevel() | 0);
 
     // 积分系统
     const scoreY = (topBg.h >> 1) - 35;
@@ -69,13 +74,34 @@ class Map extends Actor {
       { w: this.w - this.x * 2, h: 20 },
       this.x,
       this.y - 35,
-      7200, // 7200 帧
       () => {
         this.fsm = "end";
         this.cancelActivedBlock();
         this.cancelActivedTool();
-        this.game.actors.replay.show();
+        // 判断是否过关
+        if (game.actors.level.isAchieved(game.actors.score.value)) {
+          game.setCurrRecord(game.actors.score.value);
+          this.levelComplated = true;
+          game.actors.congrantSmall.show();
+          game.actors.congrantSmall.hide(60);
+          game.registCallback(60, () => game.actors.replay.show());
+        } else {
+          game.actors.replay.show();
+        }
       }
+    );
+
+    game.actors.congrantSmall = new ImageEffect(
+      game,
+      "congrantSmall",
+      "center",
+      "gold"
+    );
+    game.actors.congrantLarge = new ImageEffect(
+      game,
+      "congrantLarge",
+      "center",
+      "gold"
     );
 
     // 赞美系列
@@ -110,6 +136,9 @@ class Map extends Actor {
       game.actors[`${name}Card`] = new Tool(game, 1, toolX, toolY);
       toolX += toolW + toolGap;
     }
+
+    // 开始游戏
+    this.start(game.getCurrLevel());
   }
 
   blocksReset() {
