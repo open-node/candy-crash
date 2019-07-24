@@ -9,12 +9,18 @@ const Level = require("./level");
 class Map extends Actor {
   // 开始游戏
   start(level) {
-    if (level == null && this.levelComplated) level = this.game.nextLevel();
+    if (level == null) {
+      level = this.levelComplated
+        ? this.game.nextLevel()
+        : this.game.getCurrLevel();
+    }
     this.levelComplated = false;
     this.game.setCurrLevel(level);
     this.game.actors.level.setValue(level);
     this.game.actors.timer.start(this.game.actors.level.value.time * 60);
     this.game.actors.score.setValue(0);
+    // 记录当前地图中block的情况
+    this.blocksReset();
   }
 
   reset() {
@@ -64,9 +70,6 @@ class Map extends Actor {
     // 记录鼠标移动的位置
     this.mx = 0;
     this.my = 0;
-
-    // 记录当前地图中block的情况
-    this.blocksReset();
 
     // 初始化定时器
     game.actors.timer = new Timer(
