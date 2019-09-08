@@ -77,7 +77,7 @@ game.env = "production";
 game.init(resources);
 window.game = game;
 
-},{"./images/resources":1,"./src/game":23}],3:[function(require,module,exports){
+},{"./images/resources":1,"./src/game":24}],3:[function(require,module,exports){
 
 },{}],4:[function(require,module,exports){
 // shim for using process in browser
@@ -276,7 +276,27 @@ class Avatar extends Actor {
 
 module.exports = Avatar;
 
-},{"open-game":27}],6:[function(require,module,exports){
+},{"open-game":28}],6:[function(require,module,exports){
+const { Actor } = require("open-game");
+
+class Back extends Actor {
+  reset() {
+    this.x = 20;
+    this.y = 20;
+  }
+
+  mousedown(x, y) {
+    if (this.isItOn(x, y)) this.game.enter("start");
+  }
+
+  render() {
+    this.game.drawImageByName("iconBack", this.x, this.y, this.w, this.h);
+  }
+}
+
+module.exports = Back;
+
+},{"open-game":28}],7:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class Bg extends Actor {
@@ -287,7 +307,7 @@ class Bg extends Actor {
 
 module.exports = Bg;
 
-},{"open-game":27}],7:[function(require,module,exports){
+},{"open-game":28}],8:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class Block extends Actor {
@@ -375,29 +395,31 @@ class Block extends Actor {
 
 module.exports = Block;
 
-},{"open-game":27}],8:[function(require,module,exports){
+},{"open-game":28}],9:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class ImageEffect extends Actor {
-  constructor(game, name, align, rAlign, clickHandler) {
+  constructor(game, name, align, rAlign, clickHandler, ox = 0, oy = 0) {
     super(game, game.imgMaps[name]);
+    this.ox = ox;
+    this.oy = oy;
     if (align) {
       this.align = align;
-      this.xAlign(align);
+      this.xAlign();
     }
     if (rAlign) {
-      this.ralign = rAlign;
-      this.yAlign(rAlign);
+      this.rAlign = rAlign;
+      this.yAlign();
     }
     this.name = name;
     this.clickHandler = clickHandler;
   }
 
-  xAlign(value) {
+  xAlign(value = this.align) {
     if (value === "left") {
-      this.x = 0;
+      this.x = this.ox;
     } else if (value === "right") {
-      this.x = this.game.w - this.w;
+      this.x = this.game.w - this.w - this.ox;
     } else if (value === "center") {
       this.x = (this.game.w - this.w) / 2;
     } else {
@@ -405,11 +427,11 @@ class ImageEffect extends Actor {
     }
   }
 
-  yAlign(value) {
+  yAlign(value = this.rAlign) {
     if (value === "top") {
-      this.y = 0;
+      this.y = this.oy;
     } else if (value === "bottom") {
-      this.y = this.game.h - this.h;
+      this.y = this.game.h - this.h - this.oy;
     } else if (value === "center") {
       this.y = (this.game.h - this.h) / 2;
     } else if (value === "gold") {
@@ -422,9 +444,12 @@ class ImageEffect extends Actor {
   show() {
     this.frames = 0;
     this.visable = true;
+    this.hiding = false;
     this.scale = 1;
     this.alpha = 1;
     this.dScale = 0;
+    this.xAlign();
+    this.yAlign();
   }
 
   hide(frames, scale = 0.01) {
@@ -481,52 +506,91 @@ class ImageEffect extends Actor {
 
 module.exports = ImageEffect;
 
-},{"open-game":27}],9:[function(require,module,exports){
+},{"open-game":28}],10:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class LevelItem extends Actor {
-  constructor(game, level, x, y) {
+  constructor(game, level, x, y, w, h) {
     super(game);
-    this.level = level;
-    this.w = game.imgMaps.lock.w;
-    this.h = game.imgMaps.lock.h + 30;
-    this.actived = false;
+    this.value = level;
+    this.w = w;
+    this.h = h;
+    this.actived = false; // 是否被选中
+    this.isFinished = false;
+    this.record = null; // 通过关卡的最高纪录
     this.x = x;
     this.y = y;
   }
 
   mousedown(x, y) {
-    if (!this.isItOn(x, y)) return false;
-    this.actived = true;
-    return true;
+    if (this.actived && this.isItOn(x, y)) {
+      this.actived = true;
+      return true;
+    }
+    return false;
   }
 
   render() {
-    this.game.drawImageByName("lock", this.x, this.y);
-    this.game.ctx.fillText(this.level.name, this.x + 20, this.y + this.h - 10);
+    const { ctx } = this.game;
+    // 绘制背景
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+
+    // 绘制当前选中效果
+    if (this.actived) {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#ddd";
+      ctx.strokeRect(this.x, this.y, this.w, this.h);
+    }
+
+    // 绘制是否通关的图标
+    this.game.drawImageByName(
+      this.isFinished ? "unlock" : "lock",
+      this.x + this.w - 30,
+      this.y + 10,
+      20,
+      22
+    );
+    ctx.font = "18px 微软雅黑";
+    ctx.fillStyle = "#aaa";
+    ctx.textAlign = "left";
+    this.game.ctx.fillText(this.value.name, this.x + 10, this.y + 27);
+    ctx.fillStyle = "#666";
+    ctx.font = "14px 微软雅黑";
+    ctx.textAlign = "left";
+    this.game.ctx.fillText(
+      `目标: ${this.value.score}`,
+      this.x + 10,
+      this.y + 53
+    );
+    this.game.ctx.fillText(
+      `时限: ${this.value.time} 秒`,
+      this.x + 10,
+      this.y + 80
+    );
   }
 }
 
 module.exports = LevelItem;
 
-},{"open-game":27}],10:[function(require,module,exports){
+},{"open-game":28}],11:[function(require,module,exports){
 const { Actor } = require("open-game");
 const config = require("../data/level");
 
 class Level extends Actor {
   reset() {
     const { topBg } = this.game.actors;
-    this.curr = config[0];
+    this.value = null;
     this.x = topBg.x + 30;
     this.y = topBg.y + topBg.h - 20 - this.h;
   }
 
-  setValue(value) {
-    this.curr = config[value];
+  setValue(index) {
+    this.value = config[index];
   }
 
   isAchieved(score) {
-    return this.curr.score <= score;
+    return this.value.score <= score;
   }
 
   mousedown(x, y) {
@@ -540,10 +604,10 @@ class Level extends Actor {
     ctx.font = "12px 微软雅黑";
     ctx.fillStyle = "#dddd20";
     ctx.textAlign = "center";
-    ctx.fillText(this.curr.name, this.x + this.w / 2, this.y + 4 + this.h / 2);
+    ctx.fillText(this.value.name, this.x + this.w / 2, this.y + 4 + this.h / 2);
     ctx.font = "18px 微软雅黑";
     ctx.fillText(
-      `目标: ${this.curr.score}`,
+      `目标: ${this.value.score}`,
       this.game.w >> 1,
       this.game.actors.topBg.h * 0.193
     );
@@ -553,7 +617,7 @@ class Level extends Actor {
 
 module.exports = Level;
 
-},{"../data/level":22,"open-game":27}],11:[function(require,module,exports){
+},{"../data/level":23,"open-game":28}],12:[function(require,module,exports){
 const { Actor } = require("open-game");
 const config = require("../data/level");
 const LevelItem = require("./level-item");
@@ -562,25 +626,38 @@ class Levels extends Actor {
   reset() {
     const { topBg } = this.game.actors;
     this.curr = config[0];
-    this.x = topBg.x + 30;
-    this.y = topBg.y + topBg.h - 20 - this.h;
+    this.padding = 6;
+    this.x = this.padding;
+    this.y = topBg.y + topBg.h + this.padding;
 
-    this.padding = 20;
-
-    const cols = config.length >> 1;
-    const { w, h } = this.game.imgMaps.lock;
+    const records = this.game.getRecords();
+    const cols = 3;
+    const w = 100;
+    const h = 100;
+    const lineHeight = (this.game.h - this.y) / Math.ceil(config.length / cols);
     const gap = (this.game.w - this.padding * 2 - w * cols) / (cols - 1);
     this.items = config.map((level, i) => {
       const ix = this.padding + (i % cols) * (gap + w);
-      let iy = topBg.y + this.padding;
-      if (cols <= i) iy += topBg.y + topBg.h - this.padding - 40 - h;
-      return new LevelItem(this.game, level, ix, iy);
+      const iy = this.y + lineHeight * ((i / cols) | 0);
+      const item = new LevelItem(this.game, level, ix, iy, w, h);
+      if (records[i]) {
+        item.isFinished = true;
+        item.record = records[i];
+      }
+      return item;
     });
+    this.currActived = this.game.getCurrLevel();
+    this.items[this.currActived].actived = true;
   }
 
   mousedown(x, y) {
-    for (const item of this.items) {
+    for (let i = 0; i < config.length; i += 1) {
+      const item = this.items[i];
       if (item.mousedown(x, y)) {
+        this.items[this.currActived].actived = false;
+        this.currActived = i;
+        this.items[this.currActived].actived = true;
+        break;
       }
     }
   }
@@ -590,9 +667,11 @@ class Levels extends Actor {
   }
 }
 
+Levels.config = config;
+
 module.exports = Levels;
 
-},{"../data/level":22,"./level-item":9,"open-game":27}],12:[function(require,module,exports){
+},{"../data/level":23,"./level-item":10,"open-game":28}],13:[function(require,module,exports){
 const { Actor } = require("open-game");
 const Block = require("./block");
 const Timer = require("./timer");
@@ -602,6 +681,23 @@ const Numbers = require("./numbers");
 const Level = require("./level");
 
 class Map extends Actor {
+  // 开始游戏
+  start(level) {
+    if (level == null) {
+      level = this.levelComplated
+        ? this.game.nextLevel()
+        : this.game.getCurrLevel();
+    }
+    this.levelComplated = false;
+    this.game.setCurrLevel(level);
+    this.game.actors.level.currActived = level;
+    this.game.actors.level.setValue(level);
+    this.game.actors.timer.start(this.game.actors.level.value.time * 60);
+    this.game.actors.score.setValue(0);
+    // 记录当前地图中block的情况
+    this.blocksReset();
+  }
+
   reset() {
     const { game } = this;
     const {
@@ -613,6 +709,8 @@ class Map extends Actor {
       gap,
       padding: [top, , bottom, left]
     } = game.opts;
+
+    this.levelComplated = false; // 关卡是否完成
 
     const { topBg } = game.actors;
 
@@ -636,12 +734,17 @@ class Map extends Actor {
     this.h = game.h - this.y - bottom;
     if (this.y < top) throw Error("画布太小无法展示");
 
+    // 关卡选择
+    game.actors.level = new Level(this.game, this.game.imgMaps.levelBg);
+    game.actors.level.setValue(this.game.getCurrLevel() | 0);
+
+    // 积分系统
+    const scoreY = (topBg.h >> 1) - 35;
+    game.actors.score = new Numbers(game, 0.5, 0, 0, scoreY, 5, "center");
+
     // 记录鼠标移动的位置
     this.mx = 0;
     this.my = 0;
-
-    // 记录当前地图中block的情况
-    this.blocksReset();
 
     // 初始化定时器
     game.actors.timer = new Timer(
@@ -649,21 +752,36 @@ class Map extends Actor {
       { w: this.w - this.x * 2, h: 20 },
       this.x,
       this.y - 35,
-      7200, // 7200 帧
       () => {
         this.fsm = "end";
         this.cancelActivedBlock();
         this.cancelActivedTool();
-        this.game.actors.replay.show();
+        // 判断是否过关
+        if (game.actors.level.isAchieved(game.actors.score.value)) {
+          game.setCurrRecord(game.actors.score.value);
+          this.levelComplated = true;
+          game.registCallback(60, () => game.actors.replay.show());
+        } else {
+          game.actors.replay.show();
+        }
       }
     );
 
-    // 关卡选择
-    game.actors.level = new Level(this.game, this.game.imgMaps.levelBg);
-
-    // 积分系统
-    const scoreY = (topBg.h >> 1) - 35;
-    game.actors.score = new Numbers(game, 0.5, 0, 0, scoreY, 5, "center");
+    game.actors.congrantSmall = new ImageEffect(
+      game,
+      "congrantSmall",
+      "right",
+      "top",
+      null,
+      30,
+      50
+    );
+    game.actors.congrantLarge = new ImageEffect(
+      game,
+      "congrantLarge",
+      "center",
+      "gold"
+    );
 
     // 赞美系列
     game.actors.good = new ImageEffect(game, "good", "center", "gold");
@@ -683,7 +801,7 @@ class Map extends Actor {
       "gold",
       () => {
         game.actors.replay.hide(36);
-        game.registCallback(36, this.reset.bind(this));
+        game.registCallback(36, this.start.bind(this));
       }
     );
 
@@ -697,6 +815,9 @@ class Map extends Actor {
       game.actors[`${name}Card`] = new Tool(game, 1, toolX, toolY);
       toolX += toolW + toolGap;
     }
+
+    // 开始游戏
+    this.start(game.getCurrLevel());
   }
 
   blocksReset() {
@@ -964,6 +1085,9 @@ class Map extends Actor {
         // 如果有消除掉块，则加分
         const score = this.calcScore(this.removedBlocks);
         this.game.actors.score.add(score);
+        if (this.game.actors.level.isAchieved(this.game.actors.score.value)) {
+          this.game.actors.congrantSmall.show();
+        }
         // 分数已经加完，重置计数器
         this.removedBlocks = 0;
 
@@ -1045,7 +1169,7 @@ class Map extends Actor {
 
 module.exports = Map;
 
-},{"./block":7,"./image-effect":8,"./level":10,"./numbers":13,"./timer":14,"./tools":17,"open-game":27}],13:[function(require,module,exports){
+},{"./block":8,"./image-effect":9,"./level":11,"./numbers":14,"./timer":15,"./tools":18,"open-game":28}],14:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class Numbers extends Actor {
@@ -1060,6 +1184,10 @@ class Numbers extends Actor {
     this.h = this.game.imgMaps.number0.h * this.scale;
     this.value = 0;
     this.add(value);
+  }
+
+  setValue(value) {
+    this.add(value - this.value);
   }
 
   add(value) {
@@ -1112,20 +1240,25 @@ class Numbers extends Actor {
 
 module.exports = Numbers;
 
-},{"open-game":27}],14:[function(require,module,exports){
+},{"open-game":28}],15:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class Timer extends Actor {
-  constructor(game, size, x, y, frames, callback) {
+  constructor(game, size, x, y, callback) {
     super(game, size);
-    this.frames = frames; // 实时记录剩余帧数
-    this.total = frames; // 记录初始的帧数，最为100%的参考
+    this.isStoped = true;
     this.percent = 1;
     this.red = 0;
     this.green = 255;
     this.x = x;
     this.y = y;
     this.callback = callback;
+  }
+
+  start(frames) {
+    this.frames = frames;
+    this.total = frames; // 记录初始的帧数，最为100%的参考
+    this.run();
   }
 
   // stop
@@ -1182,7 +1315,7 @@ class Timer extends Actor {
 
 module.exports = Timer;
 
-},{"open-game":27}],15:[function(require,module,exports){
+},{"open-game":28}],16:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class Tool extends Actor {
@@ -1271,7 +1404,7 @@ class Tool extends Actor {
 
 module.exports = Tool;
 
-},{"open-game":27}],16:[function(require,module,exports){
+},{"open-game":28}],17:[function(require,module,exports){
 const Base = require("./base");
 
 class Bomb extends Base {
@@ -1310,7 +1443,7 @@ class Bomb extends Base {
 
 module.exports = Bomb;
 
-},{"./base":15}],17:[function(require,module,exports){
+},{"./base":16}],18:[function(require,module,exports){
 /* eslint-disable global-require */
 module.exports = [
   ["bomb", require("./bomb")],
@@ -1320,7 +1453,7 @@ module.exports = [
 ];
 /* eslint-enable global-require */
 
-},{"./bomb":16,"./magic":18,"./mallet":19,"./reset":20}],18:[function(require,module,exports){
+},{"./bomb":17,"./magic":19,"./mallet":20,"./reset":21}],19:[function(require,module,exports){
 const Base = require("./base");
 
 class Magic extends Base {
@@ -1380,7 +1513,7 @@ class Magic extends Base {
 
 module.exports = Magic;
 
-},{"./base":15}],19:[function(require,module,exports){
+},{"./base":16}],20:[function(require,module,exports){
 const Base = require("./base");
 
 class Mallet extends Base {
@@ -1405,7 +1538,7 @@ class Mallet extends Base {
 
 module.exports = Mallet;
 
-},{"./base":15}],20:[function(require,module,exports){
+},{"./base":16}],21:[function(require,module,exports){
 const Base = require("./base");
 
 class Reset extends Base {
@@ -1430,7 +1563,7 @@ class Reset extends Base {
 
 module.exports = Reset;
 
-},{"./base":15}],21:[function(require,module,exports){
+},{"./base":16}],22:[function(require,module,exports){
 const { Actor } = require("open-game");
 
 class TopBg extends Actor {
@@ -1451,7 +1584,7 @@ class TopBg extends Actor {
 
 module.exports = TopBg;
 
-},{"open-game":27}],22:[function(require,module,exports){
+},{"open-game":28}],23:[function(require,module,exports){
 const level = [
   { name: "生铁", time: 120, score: 800 },
   { name: "钢铁", time: 100, score: 1000 },
@@ -1462,12 +1595,13 @@ const level = [
   { name: "宝石", time: 70, score: 2000 },
   { name: "钻石", time: 65, score: 2200 },
   { name: "蓝钻", time: 60, score: 2400 },
-  { name: "黄钻", time: 55, score: 2400 }
+  { name: "黄钻", time: 55, score: 2400 },
+  { name: "粉钻", time: 50, score: 2600 }
 ];
 
 module.exports = level;
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 const OpenGame = require("open-game");
 const Start = require("./scenes/start");
 const Level = require("./scenes/level");
@@ -1476,6 +1610,7 @@ const Levels = require("./actors/levels");
 const Bg = require("./actors/bg");
 const TopBg = require("./actors/top-bg");
 const Avatar = require("./actors/avatar");
+const Back = require("./actors/back");
 
 class Game extends OpenGame {
   reset() {
@@ -1504,6 +1639,45 @@ class Game extends OpenGame {
     };
   }
 
+  nextLevel() {
+    const curr = this.getCurrLevel();
+    return Math.min(Levels.config.length - 1, curr + 1);
+  }
+
+  getStorageSync(name) {
+    if (this.platform.env !== "wx") return localStorage[name];
+    return wx.getStorageSync(name);
+  }
+
+  setStorageSync(name, value) {
+    if (this.platform.env !== "wx") {
+      localStorage[name] = value;
+    } else {
+      wx.setStorageSync(name, value);
+    }
+  }
+
+  getCurrLevel() {
+    const value = Math.max(0, this.getStorageSync("currLevel") | 0);
+    return Math.min(Levels.config.length - 1, value);
+  }
+
+  setCurrLevel(value) {
+    const level = Math.min(Levels.config.length - 1, Math.max(0, value | 0));
+    this.setStorageSync("currLevel", level);
+  }
+
+  getRecords() {
+    return this.getStorageSync("records") || [];
+  }
+
+  setCurrRecord(score) {
+    const records = this.getRecords();
+    const level = this.getCurrLevel();
+    if (!records[level] || records[level] < score) records[level] = score;
+    this.setStorageSync("records", records);
+  }
+
   // 创建角色, 并非游戏全部角色
   // 这里创建的角色一般为多场景共用的单一角色
   // 场景特有的角色一般在场景内创建
@@ -1513,6 +1687,7 @@ class Game extends OpenGame {
     this.actors.topBg = new TopBg(this);
     this.actors.map = new Map(this);
     this.actors.levels = new Levels(this);
+    this.actors.back = new Back(this, this.imgMaps.iconBack);
   }
 
   // 创建场景
@@ -1532,22 +1707,26 @@ class Game extends OpenGame {
 
 module.exports = Game;
 
-},{"./actors/avatar":5,"./actors/bg":6,"./actors/levels":11,"./actors/map":12,"./actors/top-bg":21,"./scenes/level":24,"./scenes/start":25,"open-game":27}],24:[function(require,module,exports){
+},{"./actors/avatar":5,"./actors/back":6,"./actors/bg":7,"./actors/levels":12,"./actors/map":13,"./actors/top-bg":22,"./scenes/level":25,"./scenes/start":26,"open-game":28}],25:[function(require,module,exports){
 const { Scene } = require("open-game");
 
 class Level extends Scene {
-  enter() {
-    this.actors = ["bg", "topBg", "level"];
+  constructor(game, name) {
+    super(game, name);
+    this.actors = ["bg", "topBg", "level", "levels", "back"];
   }
+
+  enter() {}
 }
 
 module.exports = Level;
 
-},{"open-game":27}],25:[function(require,module,exports){
+},{"open-game":28}],26:[function(require,module,exports){
 const { Scene } = require("open-game");
 
 class Start extends Scene {
-  enter() {
+  constructor(game, name) {
+    super(game, name);
     this.actors = [
       "bg",
       "topBg",
@@ -1563,14 +1742,23 @@ class Start extends Scene {
       "magicCard",
       "malletCard",
       "resetCard",
+      "congrantSmall",
+      "congrantLarge",
       "level"
     ];
+  }
+
+  enter() {
+    const { currActived } = this.game.actors.levels;
+    if (currActived === this.game.getCurrLevel()) return;
+    // 如果选择了不一样的关卡，则重新开始游戏
+    this.game.actors.map.start(currActived);
   }
 }
 
 module.exports = Start;
 
-},{"open-game":27}],26:[function(require,module,exports){
+},{"open-game":28}],27:[function(require,module,exports){
 /**
  * Actor 类
  * @class
@@ -1672,7 +1860,7 @@ class Actor {
 
 module.exports = Actor;
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function (process){
 const Actor = require("./actor");
 const Scene = require("./scene");
@@ -1964,13 +2152,21 @@ class Game {
    *
    * @return {void}
    */
-  showMessage(msg) {
+  showMessage(msg, stack) {
     this.ctx.save();
     this.ctx.fillStyle = "#ffffff";
-    this.ctx.fillRect(0, this.h - 40, this.w, 40);
+    this.ctx.fillRect(0, 0, this.w, this.h);
     this.ctx.fillStyle = "orange";
-    this.ctx.font = "20px 宋体";
-    this.ctx.fillText(msg, 0, this.h - 20);
+    this.ctx.font = "12px 宋体";
+    const x = 10;
+    let y = 16;
+    this.ctx.fillText(msg, x, y);
+    if (stack) {
+      for (const line of stack.split("\n")) {
+        y += 16;
+        this.ctx.fillText(line, x, y);
+      }
+    }
     this.ctx.restore();
   }
 
@@ -2124,7 +2320,7 @@ class Game {
   registCallback(frames, handler) {
     const fno = this.fno + frames;
     const handlers = this.callbacks.get(fno) || [];
-    if (!handler.length) this.callbacks.set(fno, handlers);
+    if (!handlers.length) this.callbacks.set(fno, handlers);
     handlers.push(handler);
   }
 }
@@ -2135,7 +2331,7 @@ Game.Scene = Scene;
 module.exports = Game;
 
 }).call(this,require('_process'))
-},{"./actor":26,"./scene":28,"_process":4,"fs":3}],28:[function(require,module,exports){
+},{"./actor":27,"./scene":29,"_process":4,"fs":3}],29:[function(require,module,exports){
 /**
  * Scene 类
  * @class

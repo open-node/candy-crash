@@ -40,26 +40,31 @@ class Game extends OpenGame {
     return Math.min(Levels.config.length - 1, curr + 1);
   }
 
+  getStorageSync(name) {
+    if (this.platform.env !== "wx") return localStorage[name];
+    return wx.getStorageSync(name);
+  }
+
+  setStorageSync(name, value) {
+    if (this.platform.env !== "wx") {
+      localStorage[name] = value;
+    } else {
+      wx.setStorageSync(name, value);
+    }
+  }
+
   getCurrLevel() {
-    const value = Math.max(0, wx.getStorageSync("currLevel") | 0);
+    const value = Math.max(0, this.getStorageSync("currLevel") | 0);
     return Math.min(Levels.config.length - 1, value);
   }
 
   setCurrLevel(value) {
     const level = Math.min(Levels.config.length - 1, Math.max(0, value | 0));
-    wx.setStorageSync("currLevel", level);
-  }
-
-  getStorageSync(key) {
-    return wx.getStorageSync(key);
-  }
-
-  setStorageSync(key, data) {
-    return wx.setStorageSync(key, data);
+    this.setStorageSync("currLevel", level);
   }
 
   getRecords() {
-    return wx.getStorageSync("records") || [];
+    return this.getStorageSync("records") || [];
   }
 
   setCurrRecord(score) {
